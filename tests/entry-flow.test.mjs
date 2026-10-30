@@ -6,22 +6,22 @@ import {entryRedirect, consumeEntry, randomNickname} from '../public/interaction
 
 const source = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
 function entryPage(address, room, storage) {
-  let submit;
+  let submit, connections = 0;
   const input = {value:'', blur() {}};
   const screen = {hidden:false, classList:{add() {screen.hidden=true;}}};
   const elements = {'enter-form':{addEventListener(event, fn) {submit=fn;}}, 'enter-screen':screen, 'nick-input':input, 'nick-btn':{}};
-  const location = {href:address};
+  const location = {href:address,protocol:new URL(address).protocol};
   const context = vm.createContext({
     document: {getElementById: id => elements[id], querySelector: () => ({value:'3'})},
     SERVER:room, SERVERS:{1:{name:'서버1'},3:{name:'서버3'}}, location,
     history:{replaceState(state, title, url) {location.href=url;}},
     localStorage:{getItem:key=>storage.get(key), setItem:(key,value)=>storage.set(key,value)},
-    matchMedia:()=>({matches:false}), sound:{unlock(){}}, updateNick(){}, sendNick(){}, toast(){},
-    myName:'', entryRedirect, consumeEntry, randomNickname,
+    matchMedia:()=>({matches:false}), sound:{unlock(){}}, updateNick(){}, sendNick(){}, toast(){}, reportEntry(){},
+    myName:'', chatWs:null, connectChat(){connections++;context.chatWs={};}, entryRedirect, consumeEntry, randomNickname,
   });
   vm.runInContext(source.slice(source.indexOf('let wantNick ='), source.indexOf('const shownName =')), context);
   vm.runInContext(source.slice(source.indexOf("document.getElementById('enter-form').addEventListener"), source.indexOf('// 서버 고르기')), context);
-  return {input,screen,location,submit:()=>submit({preventDefault(){}})};
+  return {input,screen,location,connections:()=>connections,submit:()=>submit({preventDefault(){}})};
 }
 
 test('a first visitor gets a name and changing rooms finishes entry after a single submission', () => {
@@ -41,4 +41,11 @@ test('saved names are reused and a same-room entry needs no reload', () => {
   page.submit();
   assert.equal(page.screen.hidden, true);
   assert.equal(page.location.href, 'https://camp.example/?server=3');
+});
+
+test('entry opens one connection and repeated submissions never reserve a second seat', () => {
+  const page=entryPage('https://camp.example/?server=3',3,new Map());
+  assert.equal(page.connections(),0);
+  page.submit();page.submit();
+  assert.equal(page.connections(),1);
 });

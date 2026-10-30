@@ -12,3 +12,10 @@ result.jpg
 # 작업 노트 (참고 사이트 분석·개인 인수인계)
 00_인수인계.md
 01_분석.md
+
+# Generated cloud assets and local Worker state
+.build/
+.wrangler/
+
+# Anonymous aggregate counters (no visitor records)
+.data/

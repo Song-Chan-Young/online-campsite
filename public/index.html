@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>방구석 캠핑장</title>
+<title>방구석 캠핑장 — 혼자여도 좋고, 같이여도 좋은 밤</title>
+<meta name="description" content="모닥불 앞에서 잠깐 쉬어가세요. 혼자 불멍하거나 친구를 옆자리로 초대하는 작은 온라인 캠핑장.">
+<meta property="og:title" content="방구석 캠핑장">
+<meta property="og:description" content="캠핑 갈 기운도 없는 날, 여기 잠깐 앉았다 가세요.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%94%A5%3C/text%3E%3C/svg%3E">
 <style>
   :root {
@@ -140,6 +143,36 @@
     .chat-form input, .chat-form button { min-height: 44px; box-sizing: border-box; }
     .toast { top: 154px; max-width: calc(100vw - 32px); box-sizing: border-box; white-space: normal; text-align: center; }
   }
+
+  .camp-tools {position:fixed;left:16px;top:90px;display:grid;gap:6px;padding:10px;width:174px;z-index:2;}
+  .camp-tools button {min-height:44px;border:1px solid var(--line);border-radius:14px;padding:8px 10px;background:rgba(0,0,0,.15);color:var(--text);font:inherit;font-size:13px;text-align:left;cursor:pointer;touch-action:manipulation;}
+  .camp-tools button:hover {background:var(--panel-hover);}
+  .camp-tools button:disabled {opacity:.5;cursor:wait;}
+  .volume-control {display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);grid-column:1 / -1;}
+  .volume-control input {min-width:0;flex:1;accent-color:var(--accent);min-height:24px;}
+  #camp-connection {font-size:11px;color:var(--text-dim);padding:2px 4px;}
+  .social-dialog {position:fixed;margin:auto;width:min(440px,calc(100vw - 48px));max-height:calc(100dvh - 48px);overflow:auto;border:1px solid var(--line);border-radius:24px;padding:24px;color:var(--text);box-sizing:border-box;text-align:center;}
+  .social-dialog::backdrop {background:rgba(6,12,8,.65);backdrop-filter:blur(4px);}
+  .social-dialog h2 {margin:0 0 10px;}
+  .social-dialog p {color:var(--text-dim);font-size:14px;line-height:1.6;}
+  .social-dialog textarea,.social-dialog input {box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:12px;color:var(--text);font:inherit;font-size:16px;}
+  .social-dialog textarea {resize:vertical;min-height:100px;}
+  .social-dialog button {min-height:44px;margin:6px 2px;border:0;border-radius:20px;padding:10px 16px;background:var(--accent);color:#2a1606;font:inherit;cursor:pointer;}
+  .social-dialog button.secondary {background:rgba(255,255,255,.1);color:var(--text);}
+  .social-dialog button:disabled {opacity:.5;}
+  #photo-preview {width:100%;max-height:58dvh;object-fit:contain;border-radius:12px;}
+  #worry-paper {margin:14px auto;width:120px;padding:18px 0;background:#b77b43;color:#fff1d8;border-radius:8px;}
+  #worry-paper.burning {animation:release-worry .9s ease-in forwards;}
+  @keyframes release-worry {to {transform:translateY(-45px) scale(.25) rotate(8deg);opacity:0;filter:blur(5px);}}
+  @media (prefers-reduced-motion:reduce) {#worry-paper.burning {animation:none;opacity:0;}}
+  @media (pointer:coarse),(max-width:700px) {
+    .camp-tools {top:auto;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 86px);left:8px;right:8px;width:auto;grid-template-columns:1fr 1fr;padding:7px;gap:5px;}
+    #camp-connection {grid-column:1 / -1;text-align:center;}
+    .camp-tools button {text-align:center;font-size:12px;padding:6px 4px;}
+    .chat {bottom:calc(max(16px,env(safe-area-inset-bottom)) + 256px);}
+    .chat-log {max-height:12vh;}
+    .social-dialog {padding:18px;}
+  }
 </style>
 <!-- (원본, 2026-10-30 송찬영 [AI]) CDN — 서버(server.mjs)가 node_modules/three 를 /vendor/three/ 로 직접 줌
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -170,7 +203,40 @@
   </div>
 </div>
 
-<div class="toast pill" id="toast"></div>
+<div class="toast pill" id="toast" role="status" aria-live="polite"></div>
+<aside id="camp-tools" class="camp-tools pill" aria-label="캠프에서 쉬기">
+  <label class="volume-control">소리 <input id="volume-control" type="range" min="0" max="100" value="65" aria-label="캠핑장 소리 크기"></label>
+  <span id="camp-connection" role="status">캠프에 연결 중…</span>
+  <button id="quiet-toggle" type="button" aria-pressed="true">🌙 조용히 쉬는 중</button>
+  <button id="invite-btn" type="button">🔗 옆자리 초대</button>
+  <button id="gift-btn" type="button">🍡 마시멜로 건네기</button>
+  <button id="worry-btn" type="button">🔥 걱정 내려놓기</button>
+</aside>
+<dialog id="invite-dialog" class="social-dialog pill" aria-labelledby="invite-title">
+  <h2 id="invite-title">옆자리에서 같이 쉴까요?</h2>
+  <p>이 링크로 들어오면 같은 캠프의 가까운 빈 의자로 안내해요.</p>
+  <input id="invite-url" readonly aria-label="친구 초대 주소">
+  <button id="invite-share" type="button">링크 공유</button>
+  <button type="button" class="secondary" data-close-dialog>닫기</button>
+</dialog>
+<dialog id="worry-dialog" class="social-dialog pill" aria-labelledby="worry-title">
+  <h2 id="worry-title">오늘의 걱정, 잠깐 내려놓기</h2>
+  <p>적은 내용은 나에게만 보여요.<br>저장하거나 다른 사람에게 보내지 않아요.</p>
+  <form id="worry-form">
+    <textarea id="worry-input" maxlength="160" autocomplete="off" spellcheck="false" aria-label="내려놓을 걱정" placeholder="오늘 나를 무겁게 한 일…"></textarea>
+    <div id="worry-paper" aria-hidden="true">오늘의 걱정</div>
+    <button id="worry-burn" type="submit">장작과 함께 보내기</button>
+    <button type="button" class="secondary" data-close-dialog>닫기</button>
+  </form>
+</dialog>
+<dialog id="photo-dialog" class="social-dialog pill" aria-labelledby="photo-title">
+  <h2 id="photo-title">오늘 밤의 캠핑 엽서</h2>
+  <img id="photo-preview" alt="내 이름과 날짜를 담은 방구석 캠핑장 사진">
+  <p id="photo-caption"></p>
+  <button id="photo-share" type="button">사진 공유</button>
+  <button id="photo-save" type="button">사진 저장</button>
+  <button type="button" class="secondary" data-close-dialog>닫기</button>
+</dialog>
 
 <nav class="dock pill" aria-label="동작">
   <button id="btn-fire" type="button">
@@ -230,8 +296,9 @@
 <div id="enter-screen">
   <div class="enter-card pill">
     <h1>방구석 캠핑장</h1>
-    <p>모닥불 앞에 말없이 앉아 쉬는 곳<br>소리가 함께 나와요</p>
+    <p>혼자여도 좋고, 같이여도 좋은 밤<br>모닥불 앞에서 잠깐 쉬어가세요</p>
     <!-- (원본, 2026-10-30 송찬영 [AI]) <button id="enter" type="button">들어가기</button> -->
+    <p id="invite-note" hidden></p>
     <form id="enter-form" autocomplete="off">
       <input id="nick-input" maxlength="12" placeholder="닉네임 (12자까지)" aria-label="닉네임">
       <div class="server-pick" role="radiogroup" aria-label="서버">
@@ -247,7 +314,9 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createCampfireFlames, createEmberTexture } from './camp-fire.mjs';
 import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
+import { inviteAddress, burnPrivateWorry, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
 
 // ---------- 기본 ----------
 function mulberry32(a) {
@@ -1454,19 +1523,16 @@ function addLog(dropIn = false) {
 }
 for (let i = 0; i < 4; i++) addLog();
 
-const flames = [];
-{
-  const specs = [[0.36, 1.1, 0xff6a1a, 0], [0.26, 0.85, 0xffb030, 1.7], [0.2, 0.7, 0xff8a20, 3.1], [0.14, 0.55, 0xfff0a0, 4.2]];
-  for (const [r, h, color, phase] of specs) {
-    const geo = new THREE.ConeGeometry(r, h, 10, 1, true); geo.translate(0, h / 2, 0);
-    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    mesh.position.y = 0.2;
-    mesh.position.x = (rand() - 0.5) * 0.12;
-    mesh.position.z = (rand() - 0.5) * 0.12;
-    mesh.userData = { phase, h };
-    fire.add(mesh);
-    flames.push(mesh);
-  }
+const naturalFire = createCampfireFlames(THREE);
+fire.add(naturalFire.group);
+const coals = [];
+for (let i = 0; i < 14; i++) {
+  const a = i * 2.39996, r = 0.12 + rand() * 0.36;
+  const material = new THREE.MeshStandardMaterial({color: 0x21110b, roughness: 1,
+    emissive: 0xd33406, emissiveIntensity: 0.6});
+  const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07 + rand() * 0.045, 0), material);
+  coal.position.set(Math.sin(a) * r, 0.10, Math.cos(a) * r);
+  coal.scale.set(1.3, 0.55, 1); fire.add(coal); coals.push(coal);
 }
 const fireLight = new THREE.PointLight(0xff8a3a, 20, 30, 1.4);
 fireLight.position.set(0, 1.0, 0);
@@ -1475,19 +1541,19 @@ fireLight.shadow.mapSize.set(512, 512);
 fireLight.shadow.bias = -0.002;
 scene.add(fireLight);
 
-const sparkCount = 90;
+const sparkCount = 36;
 const sparkPos = new Float32Array(sparkCount * 3);
 const sparkVel = new Float32Array(sparkCount);
 const sparkGeo = new THREE.BufferGeometry();
 sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
-const sparkMat = new THREE.PointsMaterial({ color: 0xffb060, size: 0.07, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+const sparkMat = new THREE.PointsMaterial({ color: 0xffb060, size: 0.045, map: createEmberTexture(THREE), transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false });
 const sparks = new THREE.Points(sparkGeo, sparkMat);
 scene.add(sparks);
 function resetSpark(i, spread = 1) {
   sparkPos[i * 3] = (Math.random() - 0.5) * 0.4;
-  sparkPos[i * 3 + 1] = 0.3 + Math.random() * spread * 3;
+  sparkPos[i * 3 + 1] = 0.3 + Math.random() * spread * 1.6;
   sparkPos[i * 3 + 2] = (Math.random() - 0.5) * 0.4;
-  sparkVel[i] = 0.5 + Math.random() * 1.2;
+  sparkVel[i] = 0.25 + Math.random() * 0.7;
 }
 for (let i = 0; i < sparkCount; i++) resetSpark(i);
 
@@ -1495,14 +1561,17 @@ let fireLevel = 0.45;
 
 // ---------- 소리 (Web Audio 합성 — 음원 파일 없음) ----------
 class Sound {
-  constructor() { this.ctx = null; this.muted = false; }
+  constructor() {
+    this.ctx = null; this.muted = false; this.volume = 0.65;
+    try { const saved = localStorage.getItem('camp-volume'); if (saved !== null && Number.isFinite(Number(saved))) this.volume = Math.max(0, Math.min(1, Number(saved))); } catch {}
+  }
   get ready() { return !!this.ctx && this.ctx.state === 'running' && !this.muted; }
   unlock() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       const c = this.ctx = new AC();
-      this.master = c.createGain();
+      this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : this.volume;
       const comp = c.createDynamicsCompressor();
       comp.threshold.value = -16; comp.ratio.value = 3;
       this.master.connect(comp); comp.connect(c.destination);
@@ -1552,7 +1621,7 @@ class Sound {
   }
   setMuted(m) {
     this.muted = m;
-    if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.08);
+    if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.08);
   }
   /* (원본, 2026-10-30 송찬영 [AI]) 장작 소리 — 띠리릭 잡음 한 번. 「더 타닥타닥」 요청으로 click/crackle/snap 으로 교체
   // 장작 타닥 소리 한 번
@@ -2074,12 +2143,66 @@ function renderMute() {
 }
 renderMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); renderMute(); });
+const volumeControl = document.getElementById('volume-control');
+volumeControl.value = Math.round(sound.volume * 100);
+volumeControl.addEventListener('input', () => {
+  sound.unlock(); sound.volume = Number(volumeControl.value) / 100;
+  sound.setMuted(sound.volume === 0); renderMute();
+  try { localStorage.setItem('camp-volume', String(sound.volume)); } catch {}
+});
 
 // ---------- 채팅 — 같은 서버 접속자끼리 (server.mjs /chat) ----------
 const chatLog = document.getElementById('chat-log');
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
 let chatWs = null, myName = '', chatRetry = 0;
+let quietMode = (() => {try {return localStorage.getItem('camp-quiet') !== 'false';} catch {return true;}})();
+let modePending = false;
+let visitReported = false, foregroundSeconds = 0, engagedReported = false;
+let previousForegroundTick = performance.now();
+function reportEntry() {
+  if (!entered || visitReported || !chatWs || chatWs.readyState !== WebSocket.OPEN || myId === null) return;
+  const today = new Date().toISOString().slice(0, 10);
+  let returning = false;
+  try {
+    const last = localStorage.getItem('camp-last-visit'); returning = Boolean(last && last !== today);
+    localStorage.setItem('camp-last-visit', today);
+  } catch {}
+  chatWs.send(JSON.stringify({type: 'visit', returning})); visitReported = true;
+}
+setInterval(() => {
+  const now = performance.now(), elapsed = Math.min(2, (now - previousForegroundTick) / 1000);
+  previousForegroundTick = now;
+  if (!document.hidden && entered && visitReported && chatWs?.readyState === WebSocket.OPEN) foregroundSeconds += elapsed;
+  if (!engagedReported && foregroundSeconds >= 300 && chatWs?.readyState === WebSocket.OPEN) {
+    chatWs.send(JSON.stringify({type: 'engaged'})); engagedReported = true;
+  }
+}, 1000);
+const visitorToken = (() => {
+  try {
+    let token = sessionStorage.getItem('camp-visitor');
+    if (!token || !/^[a-zA-Z0-9_-]{6,80}$/.test(token)) { token = makeVisitorToken(); sessionStorage.setItem('camp-visitor', token); }
+    return token;
+  } catch { return makeVisitorToken(); }
+})();
+function renderSocial() {
+  const connected = chatWs?.readyState === WebSocket.OPEN && myId !== null;
+  const button = document.getElementById('quiet-toggle');
+  button.textContent = quietMode ? '🌙 조용히 쉬는 중' : '☕ 말 걸어도 좋아요';
+  button.setAttribute('aria-pressed', String(quietMode)); button.disabled = !connected || modePending;
+  document.getElementById('gift-btn').disabled = !connected || quietMode;
+  document.getElementById('invite-btn').disabled = !connected;
+  document.getElementById('chat').hidden = quietMode;
+  document.getElementById('camp-connection').textContent = connected
+    ? `${SERVERS[SERVER].name} · ${remotes.size + 1}명이 쉬는 중`
+    : '다시 연결하는 중…';
+  setChatReady(connected);
+}
+function remoteLabel(name, quiet) { return `${quiet ? '🌙' : '☕'} ${name}`; }
+function updateRemoteLabel(r) {
+  scene.remove(r.tag); r.tag.material.map.dispose(); r.tag.material.dispose();
+  r.tag = makeNameTag(remoteLabel(r.name, r.quiet)); scene.add(r.tag);
+}
 function addChat(name, text, self) {
   const li = document.createElement('li');
   if (self) li.className = 'me';
@@ -2091,12 +2214,14 @@ function addChat(name, text, self) {
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 function setChatReady(ok) {
-  chatInput.disabled = !ok; chatSend.disabled = !ok;
-  chatInput.placeholder = ok ? `나는 「${myName}」 — 말 걸기` : '연결 중…';
+  chatInput.disabled = !ok || quietMode; chatSend.disabled = !ok || quietMode;
+  chatInput.placeholder = quietMode ? '지금은 조용히 쉬는 중이에요' : ok ? `나는 「${myName}」 — 말 걸기` : '연결 중…';
 }
 function connectChat() {
   // (원본, 2026-10-30 송찬영 [AI]) const ws = chatWs = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chat`);
-  const ws = chatWs = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chat?server=${SERVER}`);   // 서버(방)별로
+  const query = new URLSearchParams({server: String(SERVER), visitor: visitorToken, quiet: quietMode ? '1' : '0'});
+  const near = new URL(location.href).searchParams.get('near'); if (near) query.set('near', near);
+  const ws = chatWs = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chat?${query}`);   // 서버(방)별로
   ws.onmessage = e => {
     let m;
     try { m = JSON.parse(e.data); } catch { return; }
@@ -2106,6 +2231,14 @@ function connectChat() {
       myName = m.name; chatRetry = 0; setChatReady(true);
       myId = m.id; (m.peers || []).forEach(addRemote);
       currentSpot = m.spot ?? null;
+      quietMode = m.quiet !== false; modePending = false;
+      renderSocial(); reportEntry();
+      const note = document.getElementById('invite-note');
+      if (m.invite) {
+        note.hidden = false;
+        note.textContent = m.invite === 'nearby' ? '친구 가까운 빈 의자를 준비했어요.' : m.invite === 'full' ? '의자가 모두 사용 중이에요. 같은 캠프에서 잠시 기다려 주세요.' : '친구가 잠시 자리를 비웠어요. 편한 자리에서 기다려 주세요.';
+        if (entered) toast(note.textContent);
+      }
       const initialChair = currentSpot?.startsWith('seat:') ? seats[Number(currentSpot.slice(5))] : null;
       if (initialChair) {
         me.position.copy(initialChair.getWorldPosition(new THREE.Vector3()));
@@ -2122,21 +2255,21 @@ function connectChat() {
       updateNick();
     }
     else if (m.type === 'renamed') { myName = m.name; setChatReady(true); updateNick(); }
-    else if (m.type === 'chat') addChat(m.name, m.text, m.name === myName);
+    else if (m.type === 'chat' && !quietMode) addChat(m.name, m.text, m.name === myName);
   };
   ws.onclose = () => {
     setChatReady(false);
     currentSpot = null; occupiedSpots.clear();
     walkTo = null; walkSeat = null; walkLie = false; pose = 'stand';
-    chatWs = null;
-    clearRemotes();   // 끊기면 다른 사람 아바타 지움 (다시 붙으면 welcome 으로 다시 받음)
+    chatWs = null; modePending = false; visitReported = false; foregroundSeconds = 0; engagedReported = false;
+    clearRemotes();
+    renderSocial();   // 끊기면 다른 사람 아바타 지움 (다시 붙으면 welcome 으로 다시 받음)
     setTimeout(connectChat, Math.min(10000, 1000 * 2 ** chatRetry++));   // 1·2·4·8·10초… 다시 붙음
   };
 }
 // (원본, 2026-10-30 송찬영 [AI]) if (location.protocol.startsWith('http')) connectChat();
 // (원본, 2026-10-30 송찬영 [AI]) else chatInput.placeholder = '서버(serve.cmd)로 열면 대화할 수 있어요';
-if (location.protocol.startsWith('http')) connectChat();
-else chatInput.placeholder = '서버(serve.cmd)로 열면 대화할 수 있어요';
+if (!location.protocol.startsWith('http')) chatInput.placeholder = '서버(serve.cmd)로 열면 대화할 수 있어요';
 
 // ---------- 다른 사람 — 같은 서버(방) 사람의 아바타 · 이름표 · 움직임 · 인사 ----------
 let myId = null, lastSent = '', lastSentAt = 0;
@@ -2157,8 +2290,8 @@ function addRemote(p) {
   const g = avatarTemplate.clone(true);
   g.rotation.order = 'YXZ';
   copyLook(g);
-  const tag = makeNameTag(p.name);
-  const r = { id: p.id, name: p.name, spot: p.spot ?? null, g, tag, tx: p.x ?? 0, tz: p.z ?? 0, tyaw: p.yaw ?? 0, pose: p.pose ?? 'stand', lieSpot: p.lieSpot ?? 'mat',
+  const tag = makeNameTag(remoteLabel(p.name, p.quiet !== false));
+  const r = { id: p.id, name: p.name, spot: p.spot ?? null, quiet: p.quiet !== false, g, tag, tx: p.x ?? 0, tz: p.z ?? 0, tyaw: p.yaw ?? 0, pose: p.pose ?? 'stand', lieSpot: p.lieSpot ?? 'mat',
     sit: p.pose === 'sit' ? 1 : 0, lie: p.pose === 'lie' ? 1 : 0, phase: 0, waveUntil: 0,
     armL: g.getObjectByName('armL'), armR: g.getObjectByName('armR'), hips: [g.getObjectByName('hip0'), g.getObjectByName('hip1')], knees: [g.getObjectByName('knee0'), g.getObjectByName('knee1')] };
   g.position.set(r.tx, 0, r.tz);
@@ -2182,6 +2315,25 @@ function waveAt(r) {   // 그 사람 쪽을 보고 손 흔들기 (앉거나 누�
   waveUntil = clock.elapsedTime + 2.2;
 }
 function onPresence(m) {   // 처리했으면 true
+  if (m.type === 'mode') {
+    if (m.id === myId) {
+      quietMode = m.quiet; modePending = false;
+      try { localStorage.setItem('camp-quiet', String(quietMode)); } catch {}
+      renderSocial(); updateNick();
+    } else {
+      const r = remotes.get(m.id); if (r) { r.quiet = m.quiet; updateRemoteLabel(r); }
+    }
+    return true;
+  }
+  if (m.type === 'notice') { toast(m.message); return true; }
+  if (m.type === 'gift') {
+    if (quietMode) return true;
+    if (m.to === myId) {
+      if (!held && pose !== 'lie') holdItem('marshmallow', 10);
+      toast(`${m.name}님이 마시멜로를 건넸어요 🍡`);
+    } else if (m.from === myId) toast(`${m.targetName}님에게 마시멜로를 건넸어요 🍡`);
+    return true;
+  }
   if (m.type === 'spot-busy') {
     if (m.spot !== currentSpot) return true;   // ignore a reply to an older destination
     occupiedSpots = new Set(m.occupied || []);
@@ -2193,24 +2345,24 @@ function onPresence(m) {   // 처리했으면 true
     } else { sendPresenceNow(); toast('빈 자리가 없어요 — 잠시 기다려 주세요'); }
     return true;
   }
-  if (m.type === 'join') { addRemote(m); toast(`${m.name}님이 들어왔어요`); return true; }
+  if (m.type === 'join') { addRemote(m); renderSocial(); if (!quietMode) toast(`${m.name}님이 들어왔어요`); return true; }
   if (m.type === 'leave') {
     const r = remotes.get(m.id); if (r?.spot) occupiedSpots.delete(r.spot);
-    removeRemote(m.id); return true;
+    removeRemote(m.id); renderSocial(); return true;
   }
   if (m.type === 'name') {
     const r = remotes.get(m.id);
-    if (r) { r.name = m.name; scene.remove(r.tag); r.tag = makeNameTag(m.name); scene.add(r.tag); }
+    if (r) { r.name = m.name; updateRemoteLabel(r); }
     return true;
   }
   if (m.type === 'state') {
     let r = remotes.get(m.id);
     if (!r) { addRemote(m); r = remotes.get(m.id); }
     if (r?.spot && r.spot !== m.spot) occupiedSpots.delete(r.spot);
-    if (r) { r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; }
+    if (r) { r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; if (typeof m.quiet === 'boolean' && r.quiet !== m.quiet) { r.quiet = m.quiet; updateRemoteLabel(r); } }
     return true;
   }
-  if (m.type === 'act' && m.act === 'hello') {   // 서로 인사 — 나한테 하면 알려 주고 자동으로 답례
+  if (!quietMode && m.type === 'act' && m.act === 'hello') {   // 서로 인사 — 나한테 하면 알려 주고 자동으로 답례
     const r = remotes.get(m.id);
     if (r) {
       r.waveUntil = clock.elapsedTime + 2.2;
@@ -2235,11 +2387,11 @@ function sendPresenceNow() {
     yaw: +me.rotation.y.toFixed(2), pose, lieSpot, spot: currentSpot }));
 }
 function presenceTick(dt, t) {
-  // 내 상태 보내기 — 바뀌면 0.1초마다, 그대로면 2초마다
+  // 내 상태 보내기 — 바뀌면 0.1초마다, 그대로면 30초마다
   if (chatWs && chatWs.readyState === WebSocket.OPEN && myId !== null) {
     const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot, spot: currentSpot };
     const key = JSON.stringify(s);
-    if ((key !== lastSent && t - lastSentAt > 0.1) || t - lastSentAt > 2) {
+    if ((key !== lastSent && t - lastSentAt > 0.1) || t - lastSentAt > 30) {
       chatWs.send(JSON.stringify({ type: 'state', ...s })); lastSent = key; lastSentAt = t;
     }
   }
@@ -2274,19 +2426,40 @@ document.getElementById('chat-form').addEventListener('submit', e => {
   chatInput.value = '';
 });
 
-// 사진 찍기 — 그린 직후 같은 틱에서 캔버스를 읽어 PNG 로 내려받음
+// 캠핑 엽서 — 사용자 동작으로만 저장하거나 공유함.
+let photoBlob = null, photoURL = '';
+const photoDialog = document.getElementById('photo-dialog');
+function savePhoto() {
+  if (!photoURL) return;
+  const link = document.createElement('a'); link.href = photoURL;
+  link.download = `방구석-캠핑장-${new Date().toISOString().slice(0, 10)}.png`; link.click();
+}
 document.getElementById('shot').addEventListener('click', () => {
   renderer.render(scene, camera);
-  renderer.domElement.toBlob(blob => {
-    if (!blob) return;
-    const d = new Date(), p = n => String(n).padStart(2, '0');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `캠핑장-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast('사진을 저장했어요');
+  const postcard = document.createElement('canvas');
+  const date = new Date().toLocaleDateString('ko-KR');
+  drawPostcard(postcard, renderer.domElement, {nickname: shownName(), date, address: location.href});
+  postcard.toBlob(blob => {
+    if (!blob) { toast('사진을 만들지 못했어요. 다시 시도해 주세요'); return; }
+    if (photoURL) URL.revokeObjectURL(photoURL);
+    photoBlob = blob; photoURL = URL.createObjectURL(blob);
+    document.getElementById('photo-preview').src = photoURL;
+    document.getElementById('photo-caption').textContent = photoCaption(shownName(), date);
+    if (!photoDialog.open) photoDialog.showModal();
   }, 'image/png');
+});
+document.getElementById('photo-save').addEventListener('click', savePhoto);
+document.getElementById('photo-share').addEventListener('click', async () => {
+  if (!photoBlob) return;
+  const file = new File([photoBlob], '방구석-캠핑장.png', {type: 'image/png'});
+  try {
+    if (navigator.canShare?.({files: [file]})) await navigator.share({files: [file], title: '방구석 캠핑장'});
+    else { savePhoto(); toast('사진을 저장한 뒤 친구에게 보내 주세요'); }
+  } catch (error) { if (error.name !== 'AbortError') toast('공유가 어려워요. 사진 저장을 이용해 주세요'); }
+});
+photoDialog.addEventListener('close', () => {
+  if (photoURL) URL.revokeObjectURL(photoURL); photoURL = ''; photoBlob = null;
+  document.getElementById('photo-preview').removeAttribute('src');
 });
 
 const btnStars = document.getElementById('btn-stars');
@@ -2345,7 +2518,7 @@ function updateNick() {
   nickBtn.textContent = n;
   chatInput.placeholder = chatInput.disabled ? chatInput.placeholder : `나는 「${n}」 — 말 걸기`;
   scene.remove(myTag); myTag.material.map.dispose(); myTag.material.dispose();
-  myTag = makeNameTag(n); scene.add(myTag);
+  myTag = makeNameTag(remoteLabel(n, quietMode)); scene.add(myTag);
 }
 updateNick();
 const tagPos = new THREE.Vector3();
@@ -2376,6 +2549,8 @@ function finishEntry() {
   nickInput.blur();
   enterScreen.classList.add('hide');
   if (!entered) { entered = true; toast(`${SERVERS[SERVER].name} — 편히 쉬다 가세요`); }
+  if (!chatWs && location.protocol.startsWith('http')) connectChat();
+  reportEntry();
 }
 const pendingEntry = consumeEntry(location.href);
 if (pendingEntry.enter) {
@@ -2397,6 +2572,54 @@ nickBtn.addEventListener('click', () => {   // 닉네임 바꾸기 — 같은 �
   enterScreen.classList.remove('hide');
   nickInput.focus();
 });
+
+// ---------- 조용한 휴식 · 옆자리 초대 · 개인적인 걱정 장작 ----------
+document.getElementById('quiet-toggle').addEventListener('click', () => {
+  if (!chatWs || chatWs.readyState !== WebSocket.OPEN || modePending) return;
+  modePending = true; renderSocial();
+  chatWs.send(JSON.stringify({type: 'mode', quiet: !quietMode}));
+});
+document.getElementById('invite-btn').addEventListener('click', () => {
+  document.getElementById('invite-url').value = inviteAddress(location.href, SERVER, visitorToken);
+  document.getElementById('invite-dialog').showModal();
+});
+document.getElementById('invite-share').addEventListener('click', async () => {
+  const input = document.getElementById('invite-url');
+  try {
+    if (navigator.share) await navigator.share({title: '방구석 캠핑장', text: '모닥불 옆자리에서 같이 쉴까요?', url: input.value});
+    else { await navigator.clipboard.writeText(input.value); toast('초대 링크를 복사했어요'); }
+  } catch (error) {
+    if (error.name !== 'AbortError') { input.focus(); input.select(); toast('주소를 길게 눌러 복사해 주세요'); }
+  }
+});
+document.getElementById('gift-btn').addEventListener('click', () => {
+  const friend = [...remotes.values()].filter(r => !r.quiet && Math.hypot(r.tx - me.position.x, r.tz - me.position.z) <= 6)
+    .sort((a, b) => Math.hypot(a.tx - me.position.x, a.tz - me.position.z) - Math.hypot(b.tx - me.position.x, b.tz - me.position.z))[0];
+  if (!friend) { toast('가까이에 말 걸어도 좋은 캠퍼가 없어요'); return; }
+  sendPresenceNow();
+  chatWs?.send(JSON.stringify({type: 'gift', to: friend.id}));
+});
+const worryDialog = document.getElementById('worry-dialog');
+const worryInput = document.getElementById('worry-input');
+let worryTimer = null;
+document.getElementById('worry-btn').addEventListener('click', () => worryDialog.showModal());
+document.getElementById('worry-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const button = document.getElementById('worry-burn'); if (button.disabled) return;
+  if (!burnPrivateWorry(worryInput, () => {
+    sound.unlock(); addLog(true); fireLevel = 1;
+    for (let i = 0; i < sparkCount; i++) resetSpark(i, 2.4);
+    document.getElementById('worry-paper').classList.add('burning'); button.disabled = true;
+    worryTimer = setTimeout(() => { worryDialog.close(); toast('오늘은 여기까지만 생각해도 괜찮아요.'); }, 950);
+  })) toast('내려놓을 걱정을 짧게 적어 주세요');
+});
+worryDialog.addEventListener('close', () => {
+  clearTimeout(worryTimer); worryInput.value = '';
+  document.getElementById('worry-paper').classList.remove('burning');
+  document.getElementById('worry-burn').disabled = false;
+});
+for (const button of document.querySelectorAll('[data-close-dialog]')) button.addEventListener('click', () => button.closest('dialog').close());
+renderSocial();
 
 // ---------- 매점 · 가방 · 시설안내도 창 ----------
 /* (원본, 2026-10-30 송찬영 [AI]) 매점 6가지 — 목록을 늘리고 놓은 뒤 동작까지 붙이려고 교체
@@ -3094,7 +3317,8 @@ let waveUntil = 0;
 // });
 document.getElementById('btn-hello').addEventListener('click', () => {
   sound.unlock();
-  const r = nearestRemote(6);   // 6 안의 가장 가까운 사람
+  if (quietMode) { toast('말 걸어도 좋아요로 바꾸면 인사할 수 있어요'); return; }
+  const r = [...remotes.values()].filter(r => !r.quiet && Math.hypot(r.tx - me.position.x, r.tz - me.position.z) < 6).sort((a, b) => Math.hypot(a.tx - me.position.x, a.tz - me.position.z) - Math.hypot(b.tx - me.position.x, b.tz - me.position.z))[0];
   if (!r) { toast('근처에 인사할 사람이 없어요'); return; }
   waveAt(r);
   sendAct({ act: 'hello', to: r.id });
@@ -3132,14 +3356,11 @@ renderer.setAnimationLoop(() => {
 
   // 불
   fireLevel = Math.max(0.15, fireLevel - dt * 0.012);
-  const flicker = 0.85 + Math.sin(t * 11) * 0.06 + Math.sin(t * 23.7) * 0.05 + Math.random() * 0.06;
-  for (const f of flames) {
-    const ph = f.userData.phase;
-    const sy = (0.45 + fireLevel * 0.9) * (0.85 + Math.sin(t * 9 + ph) * 0.15 + Math.sin(t * 21 + ph * 2) * 0.08);
-    const sxz = 0.65 + fireLevel * 0.55 + Math.sin(t * 13 + ph) * 0.04;
-    f.scale.set(sxz, sy, sxz);
-    f.rotation.y = t * 0.6 + ph;
-  }
+  const flicker = 0.88 + Math.sin(t * 5.1) * 0.055 + Math.sin(t * 11.7) * 0.035 + Math.sin(t * 2.3) * 0.04;
+  naturalFire.update(t, fireLevel, camera);
+  coals.forEach((coal, i) => {
+    coal.material.emissiveIntensity = (0.45 + fireLevel * 0.9) * (0.8 + Math.sin(t * 1.7 + i * 2.3) * 0.2);
+  });
   fireLight.intensity = (6 + 34 * fireLevel) * flicker;
   for (const log of logs) {
     if (log.userData.dropFrom > 0) {
@@ -3148,14 +3369,14 @@ renderer.setAnimationLoop(() => {
     }
   }
   logMat.emissiveIntensity = 0.3 + fireLevel * 0.9 * flicker;
-  const sparkTop = 1.2 + fireLevel * 3;
+  const sparkTop = 1.2 + fireLevel * 1.6;
   for (let i = 0; i < sparkCount; i++) {
     sparkPos[i * 3 + 1] += sparkVel[i] * dt * (0.6 + fireLevel);
     sparkPos[i * 3] += Math.sin(t * 2 + i) * dt * 0.15;
     if (sparkPos[i * 3 + 1] > sparkTop) resetSpark(i, 0);
   }
   sparkGeo.attributes.position.needsUpdate = true;
-  sparkMat.opacity = Math.min(1, 0.25 + fireLevel);
+  sparkMat.opacity = Math.min(0.7, 0.2 + fireLevel * 0.5);
 
   updateAnimals(dt, t);
 

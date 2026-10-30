@@ -1,0 +1,12 @@
+import {cp,mkdir,rm} from 'node:fs/promises';
+const root=new URL('../',import.meta.url);
+const out=new URL('.build/site/',root);
+await rm(out,{recursive:true,force:true});
+await mkdir(out,{recursive:true});
+await cp(new URL('public/',root),out,{recursive:true});
+await mkdir(new URL('vendor/three/build/',out),{recursive:true});
+await mkdir(new URL('vendor/three/examples/jsm/controls/',out),{recursive:true});
+await cp(new URL('node_modules/three/build/three.module.js',root),new URL('vendor/three/build/three.module.js',out));
+await cp(new URL('node_modules/three/examples/jsm/controls/OrbitControls.js',root),new URL('vendor/three/examples/jsm/controls/OrbitControls.js',out));
+await cp(new URL('node_modules/three/LICENSE',root),new URL('vendor/three/LICENSE',out));
+console.log('Cloud assets ready in .build/site (including locally served Three.js).');

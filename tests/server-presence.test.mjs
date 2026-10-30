@@ -1,32 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EventEmitter } from 'node:events';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
-import { claimSpot, firstFreeSpot } from '../lib/spots.mjs';
+import { CampHub } from '../lib/camp-hub.mjs';
 
-// Exercise the production handlers with only the network transport replaced;
-// this environment does not permit opening a listening socket.
 function roomServer() {
-  let transport;
-  class Transport extends EventEmitter {
-    constructor() { super(); this.clients = new Set(); transport = this; }
-  }
-  const source = readFileSync(new URL('../server.mjs', import.meta.url), 'utf8');
-  vm.runInNewContext(source.slice(source.indexOf('const ADJ ='), source.indexOf('// 끊긴 연결 정리')), {
-    server: {}, WebSocketServer: Transport, claimSpot, firstFreeSpot,
-    URL, console: { log() {} },
-  });
+  const hub = new CampHub();
   return {
     join(room) {
-      const socket = new EventEmitter();
-      Object.assign(socket, { OPEN: 1, readyState: 1, messages: [],
-        send(message) { this.messages.push(JSON.parse(message)); },
-        sendState(spot, pose = 'walk') { this.emit('message', Buffer.from(JSON.stringify({type:'state', x:1, z:2, yaw:0, pose, spot})), false); },
-        disconnect() { transport.clients.delete(this); this.emit('close'); },
-      });
-      transport.clients.add(socket);
-      transport.emit('connection', socket, { url: '/chat?server=' + room });
+      const socket = {messages: [], send(raw) {this.messages.push(JSON.parse(raw));},
+        sendState(spot, pose='walk') {hub.message(this, JSON.stringify({type:'state',x:1,z:2,yaw:0,pose,spot}));},
+        disconnect() {hub.leave(this);},
+      };
+      hub.join(socket,{room});
       return socket;
     },
   };

@@ -6,7 +6,10 @@
   "description": "방구석 캠핑장 — 모닥불 앞에 말없이 앉아 쉬는 온라인 캠핑장",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "build:cloud": "node scripts/build-cloud.mjs",
+    "deploy:cloud": "npm run build:cloud && npx wrangler@4.156.0 deploy",
+    "dev:cloud": "npm run build:cloud && npx wrangler@4.156.0 dev"
   },
   "engines": {
     "node": ">=20"
