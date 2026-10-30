@@ -4,12 +4,6 @@ export function inviteAddress(address,server,visitor) {
   url.searchParams.set('server',String(server));url.searchParams.set('near',visitor);
   return url.href;
 }
-export function burnPrivateWorry(input,onBurn) {
-  if(!input.value.trim()) return false;
-  input.value='';
-  onBurn();   // deliberately receives no text: the ritual is local and ephemeral
-  return true;
-}
 export function photoCaption(nickname,date) {return `방구석 캠핑장 · ${nickname} · ${date}`;}
 export function drawPostcard(canvas,source,{nickname,date,address}) {
   const scale=Math.min(1,1600/source.width,1800/source.height);

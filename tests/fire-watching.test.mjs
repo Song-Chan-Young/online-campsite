@@ -13,7 +13,7 @@ test('watching the fire moves the view close without adding wood or changing sea
     seats:[{getWorldPosition:v=>v.set(1.2,0,2)}],campCenter:()=>new THREE.Vector3(),
     FIRE_VIEW_TARGET:new THREE.Vector3(0,1,0),sound:{unlock(){},ready:false},
     fireWatching:false,pose:'sit',walkTo:null,fireLevel:0.4,
-    flyToView:v=>{view=v;},flyTo(){},openPhotoFire:()=>photoViews++,startWalk:()=>walks++,addLog:()=>wood++,toast(){},
+    flyToView:v=>{view=v;},flyTo(){},openAmbientView:()=>photoViews++,startWalk:()=>walks++,addLog:()=>wood++,toast(){},
   });
   const start=source.indexOf('const seatWorld =');
   vm.runInContext(source.slice(start,source.indexOf('let waveUntil =',start)),context);

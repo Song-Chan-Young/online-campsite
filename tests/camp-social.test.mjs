@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {inviteAddress, burnPrivateWorry, photoCaption} from '../public/camp-social.mjs';
+import {inviteAddress, photoCaption} from '../public/camp-social.mjs';
 
 test('an invitation stays in the current room but never carries another inviter or entry marker',()=>{
   const url=new URL(inviteAddress('https://camp.example/?server=2&enter=1&near=old-host#test',3,'my-visitor-token'));
@@ -9,17 +9,6 @@ test('an invitation stays in the current room but never carries another inviter 
   assert.equal(url.searchParams.get('near'),'my-visitor-token');
   assert.equal(url.searchParams.has('enter'),false);
   assert.equal(url.hash,'');
-});
-test('a worry is cleared before the fire animation and the callback receives no private text',()=>{
-  const input={value:'private worry'};
-  let result;
-  assert.equal(burnPrivateWorry(input,(...args)=>{result={args,remaining:input.value};}),true);
-  assert.equal(input.value,'');
-  assert.deepEqual(result,{args:[],remaining:''});
-});
-test('an empty worry does not start a ritual',()=>{
-  const input={value:'   '};
-  assert.equal(burnPrivateWorry(input,()=>{throw new Error('should not burn');}),false);
 });
 test('the photo caption includes the brand, camper and date',()=>{
   const caption=photoCaption('따뜻한 도토리','2026. 10. 30.');

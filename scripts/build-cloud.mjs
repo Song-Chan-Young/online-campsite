@@ -1,6 +1,14 @@
-import {cp,mkdir,rm} from 'node:fs/promises';
+import {cp,mkdir,rm,stat} from 'node:fs/promises';
 const root=new URL('../',import.meta.url);
 const out=new URL('.build/site/',root);
+for (const name of ['campfire-real.mp4','tent-morning-real.mp4','aurora-stars-4k.mp4','fire-recording.mp3','forest-recording.mp3']) {
+  let info;
+  try {info=await stat(new URL('public/assets/'+name,root));}
+  catch {throw new Error(`Missing ambient media ${name}. See docs/media-sources.md.`);}
+  if (!info.isFile() || info.size===0) throw new Error(`Empty ambient media: ${name}`);
+  if (info.size>25*1024*1024) throw new Error(`Ambient media exceeds the hosting file limit: ${name}`);
+}
+
 await rm(out,{recursive:true,force:true});
 await mkdir(out,{recursive:true});
 await cp(new URL('public/',root),out,{recursive:true});

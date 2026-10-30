@@ -161,10 +161,6 @@
   .social-dialog button.secondary {background:rgba(255,255,255,.1);color:var(--text);}
   .social-dialog button:disabled {opacity:.5;}
   #photo-preview {width:100%;max-height:58dvh;object-fit:contain;border-radius:12px;}
-  #worry-paper {margin:14px auto;width:120px;padding:18px 0;background:#b77b43;color:#fff1d8;border-radius:8px;}
-  #worry-paper.burning {animation:release-worry .9s ease-in forwards;}
-  @keyframes release-worry {to {transform:translateY(-45px) scale(.25) rotate(8deg);opacity:0;filter:blur(5px);}}
-  @media (prefers-reduced-motion:reduce) {#worry-paper.burning {animation:none;opacity:0;}}
   @media (pointer:coarse),(max-width:700px) {
     .camp-tools {top:auto;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 86px);left:8px;right:8px;width:auto;grid-template-columns:1fr 1fr;padding:7px;gap:5px;}
     #camp-connection {grid-column:1 / -1;text-align:center;}
@@ -175,8 +171,7 @@
   }
   #real-fire-dialog {position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;margin:0;padding:0;background:#080706;color:#f8e8d2;overflow:hidden;}
   #real-fire-dialog::backdrop {background:#080706;}
-  #real-fire-canvas {position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s;}
-  #real-fire-dialog[data-ready="true"] #real-fire-canvas {opacity:1;}
+  #real-fire-video {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#080706;}
   .fire-study-header {position:absolute;top:max(20px,env(safe-area-inset-top));left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
   .fire-study-header h2 {margin:0;font-size:14px;font-weight:400;letter-spacing:.16em;text-shadow:0 2px 12px #000;}
   .fire-study-header button,.fire-study-controls button {border:1px solid #ffffff35;background:#13100db3;color:#f8e8d2;border-radius:100px;min-height:44px;padding:10px 18px;font:inherit;cursor:pointer;backdrop-filter:blur(12px);}
@@ -222,13 +217,12 @@
   <button id="quiet-toggle" type="button" aria-pressed="true">🌙 조용히 쉬는 중</button>
   <button id="invite-btn" type="button">🔗 옆자리 초대</button>
   <button id="gift-btn" type="button">🍡 마시멜로 건네기</button>
-  <button id="worry-btn" type="button">🔥 걱정 내려놓기</button>
 </aside>
 <dialog id="real-fire-dialog" aria-labelledby="fire-study-title">
-  <canvas id="real-fire-canvas" aria-label="장작과 얇은 불꽃을 가까이 바라보는 불멍 화면"></canvas>
+  <video id="real-fire-video" playsinline muted loop preload="none" aria-label="실제 촬영한 불멍, 텐트 안 아침 또는 오로라와 별이 보이는 밤하늘"></video>
   <div class="fire-study-header"><h2 id="fire-study-title">가만히, 이 불 앞에서</h2><button id="fire-study-close" type="button">캠핑장으로 돌아가기</button></div>
   <p id="fire-study-status" role="status">불 앞에 자리를 준비하는 중…</p>
-  <div class="fire-study-controls"><button id="fire-study-mute" type="button">소리 끄기</button><label>소리 <input id="fire-study-volume" type="range" min="0" max="100" value="65" aria-label="불멍 소리 크기"></label></div>
+  <div class="fire-study-controls"><button id="ambient-replay" type="button">재생</button><button id="fire-study-mute" type="button">소리 끄기</button><label>소리 <input id="fire-study-volume" type="range" min="0" max="100" value="65" aria-label="환경음 소리 크기"></label></div>
 </dialog>
 <dialog id="invite-dialog" class="social-dialog pill" aria-labelledby="invite-title">
   <h2 id="invite-title">옆자리에서 같이 쉴까요?</h2>
@@ -236,16 +230,6 @@
   <input id="invite-url" readonly aria-label="친구 초대 주소">
   <button id="invite-share" type="button">링크 공유</button>
   <button type="button" class="secondary" data-close-dialog>닫기</button>
-</dialog>
-<dialog id="worry-dialog" class="social-dialog pill" aria-labelledby="worry-title">
-  <h2 id="worry-title">오늘의 걱정, 잠깐 내려놓기</h2>
-  <p>적은 내용은 나에게만 보여요.<br>저장하거나 다른 사람에게 보내지 않아요.</p>
-  <form id="worry-form">
-    <textarea id="worry-input" maxlength="160" autocomplete="off" spellcheck="false" aria-label="내려놓을 걱정" placeholder="오늘 나를 무겁게 한 일…"></textarea>
-    <div id="worry-paper" aria-hidden="true">오늘의 걱정</div>
-    <button id="worry-burn" type="submit">장작과 함께 보내기</button>
-    <button type="button" class="secondary" data-close-dialog>닫기</button>
-  </form>
 </dialog>
 <dialog id="photo-dialog" class="social-dialog pill" aria-labelledby="photo-title">
   <h2 id="photo-title">오늘 밤의 캠핑 엽서</h2>
@@ -267,11 +251,11 @@
   </button>
   <button id="btn-stars" type="button" aria-pressed="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4Z"/><path d="M18 15l.7 1.8 1.8.7-1.8.7L18 20l-.7-1.8-1.8-.7 1.8-.7ZM5 16l.5 1.2 1.2.5-1.2.5L5 19.4l-.5-1.2-1.2-.5 1.2-.5Z"/></svg>
-    별보기
+    오로라 · 별보기
   </button>
   <button id="btn-morning" type="button" aria-pressed="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7V4M5.6 10.6 3.5 8.5M18.4 10.6l2.1-2.1"/><path d="M15 4.5c1-.8 2.2-.8 3 0 .8-.8 2-.8 3 0"/></svg>
-    아침 숲속
+    텐트 안 아침
   </button>
 </nav>
 
@@ -334,9 +318,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCampfireFlames, createEmberTexture, createBurningWood } from './camp-fire.mjs';
 import { ForestSound } from './forest-sound.mjs';
-import { createFirePhotoView } from './fire-photo-view.mjs';
+import { AmbientMedia } from './ambient-media.mjs';
 import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
-import { inviteAddress, burnPrivateWorry, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
+import { inviteAddress, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
 
 // ---------- 기본 ----------
 function mulberry32(a) {
@@ -2630,7 +2614,7 @@ nickBtn.addEventListener('click', () => {   // 닉네임 바꾸기 — 같은 �
   nickInput.focus();
 });
 
-// ---------- 조용한 휴식 · 옆자리 초대 · 개인적인 걱정 장작 ----------
+// ---------- 조용한 휴식 · 옆자리 초대 ----------
 document.getElementById('quiet-toggle').addEventListener('click', () => {
   if (!chatWs || chatWs.readyState !== WebSocket.OPEN || modePending) return;
   modePending = true; renderSocial();
@@ -2655,25 +2639,6 @@ document.getElementById('gift-btn').addEventListener('click', () => {
   if (!friend) { toast('가까이에 말 걸어도 좋은 캠퍼가 없어요'); return; }
   sendPresenceNow();
   chatWs?.send(JSON.stringify({type: 'gift', to: friend.id}));
-});
-const worryDialog = document.getElementById('worry-dialog');
-const worryInput = document.getElementById('worry-input');
-let worryTimer = null;
-document.getElementById('worry-btn').addEventListener('click', () => worryDialog.showModal());
-document.getElementById('worry-form').addEventListener('submit', event => {
-  event.preventDefault();
-  const button = document.getElementById('worry-burn'); if (button.disabled) return;
-  if (!burnPrivateWorry(worryInput, () => {
-    sound.unlock(); addLog(true); fireLevel = 1;
-    for (let i = 0; i < sparkCount; i++) resetSpark(i, 2.4);
-    document.getElementById('worry-paper').classList.add('burning'); button.disabled = true;
-    worryTimer = setTimeout(() => { worryDialog.close(); toast('오늘은 여기까지만 생각해도 괜찮아요.'); }, 950);
-  })) toast('내려놓을 걱정을 짧게 적어 주세요');
-});
-worryDialog.addEventListener('close', () => {
-  clearTimeout(worryTimer); worryInput.value = '';
-  document.getElementById('worry-paper').classList.remove('burning');
-  document.getElementById('worry-burn').disabled = false;
 });
 for (const button of document.querySelectorAll('[data-close-dialog]')) button.addEventListener('click', () => button.closest('dialog').close());
 renderSocial();
@@ -3346,28 +3311,22 @@ function applySeason(key, announce = false) {
 }
 
 const realFireDialog = document.getElementById('real-fire-dialog');
-let photoFireView = null, photoFireReady = false;
-function openPhotoFire() {
+let ambientMedia = null;
+function openAmbientView(kind = 'fire') {
+  sound.unlock();
+  if (!sound.ctx) { toast('이 브라우저는 소리 재생을 지원하지 않아요'); return; }
   if (!realFireDialog.open) realFireDialog.showModal();
+  document.getElementById('fire-study-title').textContent = kind === 'morning' ? '텐트 안에서 맞는 아침' : kind === 'stars' ? '오로라 아래, 별이 흐르는 밤' : '가만히, 장작 타는 시간';
   document.getElementById('fire-study-volume').value = Math.round(sound.volume * 100);
   document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
-  if (photoFireView) return;
-  try {
-    photoFireView = createFirePhotoView(THREE, document.getElementById('real-fire-canvas'), './assets/fire-study.jpg');
-    photoFireView.ready.then(() => {
-      photoFireReady = true; realFireDialog.dataset.ready = 'true';
-      document.getElementById('fire-study-status').hidden = true;
-    }).catch(() => {
-      realFireDialog.close(); photoFireView.dispose(); photoFireView = null;
-      toast('불멍 이미지를 불러오지 못했어요. 캠핑장의 불을 바라봐 주세요');
-    });
-  } catch {
-    realFireDialog.close();
-    toast('이 기기에서는 캠핑장의 불멍 시점을 이용해 주세요');
-  }
+  if (!ambientMedia) ambientMedia = new AmbientMedia(document.getElementById('real-fire-video'), document.getElementById('fire-study-status'), sound.ctx, sound.master);
+  ambientMedia.open(kind).catch(() => toast('재생 버튼을 눌러 다시 시작해 주세요'));
 }
+document.getElementById('ambient-replay').addEventListener('click', () => {
+  sound.unlock(); ambientMedia?.open(ambientMedia.kind);
+});
 document.getElementById('fire-study-close').addEventListener('click', () => realFireDialog.close());
-realFireDialog.addEventListener('close', () => { if (fireWatching) flyTo('normal'); });
+realFireDialog.addEventListener('close', () => { ambientMedia?.close(); if (fireWatching) flyTo('normal'); });
 document.getElementById('fire-study-mute').addEventListener('click', () => {
   sound.unlock(); sound.setMuted(!sound.muted); renderMute();
   document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
@@ -3391,7 +3350,7 @@ document.getElementById('btn-fire').addEventListener('click', () => {
   sound.unlock();
   if (fireWatching) { flyTo('normal'); toast('캠핑장을 둘러볼게요'); return; }
   flyToView(fireFocusView());
-  openPhotoFire();
+  openAmbientView();
 });
 
 let waveUntil = 0;
@@ -3413,14 +3372,14 @@ document.getElementById('btn-hello').addEventListener('click', () => {
 
 btnStars.addEventListener('click', () => {
   sound.unlock();
-  if (mode === 'night') { setMode('evening'); toast('저녁으로 돌아왔어요'); }
-  else { setMode('night'); toast('별이 떴어요'); }
+  if (mode !== 'night') setMode('night');
+  openAmbientView('stars');
 });
 
 btnMorning.addEventListener('click', () => {
   sound.unlock();
-  if (mode === 'morning') { setMode('evening'); toast('저녁으로 돌아왔어요'); }
-  else { setMode('morning'); nextBird = 0; toast('아침 숲속 — 바람과 잎사귀 사이로 새가 울어요'); }
+  if (mode !== 'morning') setMode('morning');
+  nextBird = 0; openAmbientView('morning');
 });
 
 window.addEventListener('resize', () => {
@@ -3448,7 +3407,7 @@ renderer.setAnimationLoop(() => {
   if (t >= nextCrackleAt) {
     const strength = 0.45 + fireLevel * 0.55;
     emitFireCrackle(strength);
-    if (sound.ready) { sound.sizzle(strength); sound.crackle(strength * 0.5); }
+    if (sound.ready && !realFireDialog.open) { sound.sizzle(strength); sound.crackle(strength * 0.5); }
     nextCrackleAt = t + 0.7 + Math.random() * 2.1;
   }
   coals.forEach((coal, i) => {
@@ -3551,7 +3510,7 @@ renderer.setAnimationLoop(() => {
   updateHeld(dt, t);     // 손에 든 것 (매점 물건)
 
   // 소리
-  if (sound.ready) {
+  if (sound.ready && !realFireDialog.open) {
     // (원본, 2026-10-30 송찬영 [AI]) sound.setBed(sound.fireBed, 0.05 + 0.2 * fireLevel);
     sound.setBed(sound.fireBed, 0.025 + 0.1 * fireLevel);   // 쉬— 깔림은 줄이고 타닥을 앞으로
     sound.setBed(sound.windBed, mode === 'morning' ? 0.008 : 0.015);
@@ -3570,8 +3529,12 @@ renderer.setAnimationLoop(() => {
     }
   }
 
-  if (realFireDialog.open && photoFireReady) photoFireView.render(t, crackleFlash);
-  else renderer.render(scene, camera);
+  if (realFireDialog.open && sound.ctx) {
+    // The recorded ambience is the complete soundscape here, without synthetic birds/clicks.
+    for (const bed of [sound.fireBed, sound.windBed, sound.insectBus]) sound.setBed(bed, 0);
+    sound.forest.update(false, t);
+  }
+  if (!realFireDialog.open) renderer.render(scene, camera);
 });
 </script>
 </body>

@@ -3,6 +3,8 @@
 //   /vendor/three/   → node_modules/three (CDN 대신 이 서버가 직접 줌)
 // 실행: node server.mjs   (PORT·HOST 환경변수로 바꿈. 기본 127.0.0.1:3000 — 같은 망에서 열려면 HOST=0.0.0.0)
 import { createServer } from 'node:http';
+import { createReadStream } from 'node:fs';
+import { parseByteRange } from './lib/http-range.mjs';
 import { readFile, stat, mkdir, writeFile, rename } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +24,7 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.webmanifest': 'application/manifest+json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4', '.wav': 'audio/wav',
   '.glb': 'model/gltf-binary', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.woff2': 'font/woff2',
 };
 
@@ -59,6 +62,26 @@ const server = createServer(async (req, res) => {
   try {
     const st = await stat(file);
     if (!st.isFile()) throw new Error('not a file');
+    const media = ['.mp4', '.mp3', '.wav'].includes(extname(file).toLowerCase());
+    if (media) {
+      const range = parseByteRange(req.headers.range, st.size);
+      if (range === null) {
+        res.writeHead(416, {'Content-Range': `bytes */${st.size}`, 'Accept-Ranges': 'bytes'}).end();
+        return log(416);
+      }
+      const start = range?.start ?? 0, end = range?.end ?? st.size - 1;
+      const headers = {'Content-Type': TYPES[extname(file).toLowerCase()], 'Content-Length': end - start + 1,
+        'Accept-Ranges': 'bytes', 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff'};
+      if (range) headers['Content-Range'] = `bytes ${start}-${end}/${st.size}`;
+      res.writeHead(range ? 206 : 200, headers);
+      if (req.method === 'HEAD') res.end();
+      else {
+        const stream = createReadStream(file, {start, end});
+        stream.on('error', () => res.destroy());
+        res.on('close', () => stream.destroy()); stream.pipe(res);
+      }
+      return log(range ? 206 : 200);
+    }
     const body = await readFile(file);
     const ext = extname(file).toLowerCase();
     res.writeHead(200, {

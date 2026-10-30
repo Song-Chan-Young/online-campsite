@@ -19,3 +19,6 @@ result.jpg
 
 # Anonymous aggregate counters (no visitor records)
 .data/
+
+# Licensed recorded SFX: ship as part of the built app, not standalone source assets.
+/public/assets/*-recording.mp3
