@@ -1,4 +1,4 @@
-// 숲속 캠핑장 서버 — Node 기본 모듈만 씀 (추가 패키지 없음)
+// 방구석 캠핑장 서버 — Node 기본 모듈만 씀 (추가 패키지 없음)
 //   public/          → 화면 (index.html 등)
 //   /vendor/three/   → node_modules/three (CDN 대신 이 서버가 직접 줌)
 // 실행: node server.mjs   (PORT·HOST 환경변수로 바꿈. 기본 127.0.0.1:3000 — 같은 망에서 열려면 HOST=0.0.0.0)
@@ -7,6 +7,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
+import { claimSpot, firstFreeSpot } from './lib/spots.mjs';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 // (원본, 2026-10-30 송찬영 [AI]) const PORT = Number(process.env.PORT) || 8080;   — 이 PC 에서 8080 은 EACCES (예약 범위엔 없음, 원인 미확인)
@@ -110,12 +111,13 @@ wss.on('connection', (ws, req) => {
   ws.room = ROOMS.has(q) ? q : '2';
   ws.id = nextId++;
   ws.cname = name;
+  ws.spot = firstFreeSpot(ws, ['seat:0', 'seat:1', 'seat:2', 'seat:3'], wss.clients);
   ws.state = null;
   // (원본, 2026-10-30 송찬영 [AI]) ws.send(JSON.stringify({ type: 'welcome', name }));
   const peers = [...wss.clients].filter(c => c !== ws && c.room === ws.room && c.readyState === c.OPEN)
-    .map(c => ({ id: c.id, name: c.cname, ...(c.state || {}) }));
-  ws.send(JSON.stringify({ type: 'welcome', name, id: ws.id, room: ws.room, peers }));
-  broadcastRoom(ws.room, { type: 'join', id: ws.id, name }, ws);
+    .map(c => ({ id: c.id, name: c.cname, ...(c.state || {}), spot: c.spot }));
+  ws.send(JSON.stringify({ type: 'welcome', name, id: ws.id, room: ws.room, spot: ws.spot, peers }));
+  broadcastRoom(ws.room, { type: 'join', id: ws.id, name, spot: ws.spot }, ws);
   console.log(`${new Date().toISOString()} chat join 서버${ws.room} (${wss.clients.size}명)`);
 
   ws.on('pong', () => { ws.isAlive = true; });
@@ -138,13 +140,19 @@ wss.on('connection', (ws, req) => {
     // 내 자리·자세 — 같은 방 사람에게 전달
     if (msg?.type === 'state') {
       const now = Date.now();
-      stateAt = stateAt.filter(at => now - at < 1000);
-      if (stateAt.length >= STATE_PER_SEC) return;
-      stateAt.push(now);
       const num = v => (typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < 1000 ? Math.round(v * 100) / 100 : null);
       const x = num(msg.x), z = num(msg.z), yaw = num(msg.yaw);
       if (x === null || z === null || yaw === null || !POSES.has(msg.pose)) return;
-      ws.state = { x, z, yaw, pose: msg.pose, lieSpot: LIE_SPOTS.has(msg.lieSpot) ? msg.lieSpot : 'mat' };
+      stateAt = stateAt.filter(at => now - at < 1000);
+      if (stateAt.length >= STATE_PER_SEC) return;
+      stateAt.push(now);
+      const spot = msg.spot === undefined ? null : msg.spot;
+      if (!claimSpot(ws, spot, wss.clients)) {
+        ws.send(JSON.stringify({ type: 'spot-busy', spot,
+          occupied: [...wss.clients].filter(c => c !== ws && c.room === ws.room && c.spot).map(c => c.spot) }));
+        return;
+      }
+      ws.state = { x, z, yaw, pose: msg.pose, lieSpot: LIE_SPOTS.has(msg.lieSpot) ? msg.lieSpot : 'mat', spot: ws.spot };
       broadcastRoom(ws.room, { type: 'state', id: ws.id, name, ...ws.state }, ws);
       return;
     }
@@ -184,5 +192,5 @@ setInterval(() => {
 }, 30000).unref();
 
 server.listen(PORT, HOST, () => {
-  console.log(`숲속 캠핑장 서버 — http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/`);
+  console.log(`방구석 캠핑장 서버 — http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/`);
 });

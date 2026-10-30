@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>숲속 캠핑장</title>
+<title>방구석 캠핑장</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%94%A5%3C/text%3E%3C/svg%3E">
 <style>
   :root {
@@ -121,6 +121,25 @@
     .hint { display: none; }
     .title span { display: none; }
   }
+  @media (pointer: coarse) {
+    button, input, label { touch-action: manipulation; }
+    #nick-input, .chat-form input { font-size: 16px; }
+    .hint { display: block; pointer-events: none; top: 126px; bottom: auto; left: 8px; right: 8px;
+      text-align: center; font-size: 11px; text-shadow: 0 1px 3px #000; }
+    .top { top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; flex-wrap: wrap; gap: 6px; }
+    .title { width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 10px; gap: 6px; }
+    .title b { font-size: 15px; white-space: nowrap; }
+    .title button { min-height: 40px; min-width: 0; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #server-btn { margin-left: auto; font-size: 12px; }
+    .top-right { margin-left: auto; }
+    .icon-btn { width: 44px; height: 44px; }
+    .dock { width: calc(100vw - 32px); box-sizing: border-box; }
+    .dock button { min-width: 0; flex: 1; min-height: 52px; }
+    .chat { left: 8px; right: 8px; width: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 92px); }
+    .chat-log { max-height: 15vh; }
+    .chat-form input, .chat-form button { min-height: 44px; box-sizing: border-box; }
+    .toast { top: 154px; max-width: calc(100vw - 32px); box-sizing: border-box; white-space: normal; text-align: center; }
+  }
 </style>
 <!-- (원본, 2026-10-30 송찬영 [AI]) CDN — 서버(server.mjs)가 node_modules/three 를 /vendor/three/ 로 직접 줌
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -137,8 +156,8 @@
 <div id="app"></div>
 
 <div class="top">
-  <!-- (원본, 2026-10-30 송찬영 [AI]) <div class="title pill"><b>숲속 캠핑장</b><span>사이트 1</span></div> -->
-  <div class="title pill"><b>숲속 캠핑장</b><button id="nick-btn" type="button" title="닉네임 바꾸기">나</button><button id="season-btn" type="button" title="계절 고르기">🍁 가을</button><button id="server-btn" type="button" title="서버 바꾸기">서버1</button></div>
+  <!-- (원본, 2026-10-30 송찬영 [AI]) <div class="title pill"><b>방구석 캠핑장</b><span>사이트 1</span></div> -->
+  <div class="title pill"><b>방구석 캠핑장</b><button id="nick-btn" type="button" title="닉네임 바꾸기">나</button><button id="season-btn" type="button" title="계절 고르기">🍁 가을</button><button id="server-btn" type="button" title="서버 바꾸기">서버1</button></div>
   <!-- (원본, 2026-10-30 송찬영 [AI]) <button id="mute" ...> 단독 -->
   <div class="top-right">
     <button id="bag-btn" class="icon-btn pill" aria-label="가방" title="가방">
@@ -206,11 +225,11 @@
   </form>
 </section>
 
-<div class="hint">바닥 클릭으로 걷기 · 의자 클릭으로 앉기 · 드래그로 둘러보기 · 휠로 확대/축소</div>
+<div class="hint" id="control-hint">바닥 클릭으로 걷기 · 의자 클릭으로 앉기 · 드래그로 둘러보기 · 휠로 확대/축소</div>
 
 <div id="enter-screen">
   <div class="enter-card pill">
-    <h1>숲속 캠핑장</h1>
+    <h1>방구석 캠핑장</h1>
     <p>모닥불 앞에 말없이 앉아 쉬는 곳<br>소리가 함께 나와요</p>
     <!-- (원본, 2026-10-30 송찬영 [AI]) <button id="enter" type="button">들어가기</button> -->
     <form id="enter-form" autocomplete="off">
@@ -228,6 +247,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
 
 // ---------- 기본 ----------
 function mulberry32(a) {
@@ -257,6 +277,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 1, 0);
 controls.enableDamping = true;
 controls.enablePan = false;
+controls.touches.ONE = THREE.TOUCH.ROTATE;
+controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+controls.rotateSpeed = matchMedia('(pointer: coarse)').matches ? 0.65 : 1;
+controls.zoomSpeed = 0.8;
 controls.minDistance = 3;
 controls.maxDistance = 22;
 controls.maxPolarAngle = Math.PI * 0.495;
@@ -948,7 +972,7 @@ function drawGuide(g, size, { me: mePos = null, here = null } = {}) {
     g.fillStyle = '#fff'; g.font = `600 ${Math.round(9 * k)}px "Malgun Gothic", sans-serif`; g.fillText(name, x * k, y * k);
   }
   g.fillStyle = 'rgba(59, 42, 28, 0.88)'; g.fillRect(130 * k, 30 * k, 200 * k, 40 * k);
-  g.fillStyle = '#f4ead6'; g.font = `700 ${Math.round(16 * k)}px "Malgun Gothic", sans-serif`; g.fillText('숲속 캠핑장 시설안내도', 230 * k, 50 * k);
+  g.fillStyle = '#f4ead6'; g.font = `700 ${Math.round(16 * k)}px "Malgun Gothic", sans-serif`; g.fillText('방구석 캠핑장 시설안내도', 230 * k, 50 * k);
   const pin = ([x, y], label, col) => {
     g.fillStyle = col; g.beginPath(); g.arc(x * k, y * k, 6 * k, 0, Math.PI * 2); g.fill();
     g.strokeStyle = '#fff'; g.lineWidth = 2 * k; g.stroke();
@@ -1024,7 +1048,7 @@ placeOnMap(makeBlock({ w: 20.5, d: 5.4, floors: 2, wall: 0xf0e2b8, roof: 0x8a4a3
 placeOnMap(makePergola({ w: 16.5, d: 6.4, sign: '펜션 바베큐장', grills: 4, tables: 4 }), 176, 388, Math.PI, true);
 placeOnMap(makePergola({ w: 8.6, d: 7.6, sign: '바베큐장', grills: 2, tables: 2 }), 266, 352, -0.22, true);
 // 입출구 · 호수 데크 다리
-placeOnMap(makeGate('숲속 캠핑장'), 140, 424, -0.48);
+placeOnMap(makeGate('방구석 캠핑장'), 140, 424, -0.48);
 placeOnMap(makeGate('입출구'), 46, 444, 0);
 placeOnMap(makeGate('입출구'), 364, 333, -0.48);
 makePier();
@@ -1214,6 +1238,8 @@ if (SERVER !== 2) {
 // (원본, 2026-10-30 송찬영 [AI]) pose: 'sit' 의자에 앉음 / 'walk' 걷는 중 / 'stand' 서 있음
 // pose: 'sit' 의자에 앉음 / 'walk' 걷는 중 / 'stand' 서 있음 / 'lie' 매트에 누움(별보기·아침새소리)
 let pose = 'sit';
+let currentSpot = null;   // server-reserved chair or resting spot, including the walk there
+let occupiedSpots = new Set();
 let sitBlend = 1;            // 1 = 앉은 자세, 0 = 선 자세
 let lieBlend = 0;            // 1 = 누운 자세
 let walkTo = null;           // 목적지 (Vector3)
@@ -1266,10 +1292,18 @@ function faceToward(dx, dz) { me.rotation.set(0, Math.atan2(dx, dz), 0); }
 me.rotation.order = 'YXZ';   // 방향(Y) 먼저, 그다음 눕기(X)
 faceToward(-me.position.x, -me.position.z);
 function goLie() { if (pose !== 'lie') startWalk(MAT_FOOT, null, true); }
-function goSeat() { if (pose === 'lie' || walkLie) startWalk(seats[0].position, seats[0]); }
+function goSeat() { if (pose === 'lie' || walkLie) startWalk(seats[0].getWorldPosition(new THREE.Vector3()), seats[0]); }
 // (원본, 2026-10-30 송찬영 [AI]) function startWalk(point, seat = null) {
 function startWalk(point, seat = null, lie = false) {
   // (원본, 2026-10-30 송찬영 [AI]) walkLie = lie;   — 못 가는 곳이면 그대로 두려고 아래로 옮김
+  let targetSpot = seat ? `seat:${seats.indexOf(seat)}` : lie ? `lie:${lie === true ? 'mat' : lie.spot}` : null;
+  if (targetSpot && spotIsTaken(targetSpot)) {
+    const alternative = freeChair();
+    if (!alternative) { toast('빈 자리가 없어요 — 잠시 기다려 주세요'); return; }
+    seat = alternative; point = seat.getWorldPosition(new THREE.Vector3()); lie = false;
+    targetSpot = `seat:${seats.indexOf(seat)}`;
+    toast('다른 분이 사용 중이라 빈 의자로 갈게요');
+  }
   const p = point.clone(); p.y = 0;
   const r = Math.hypot(p.x, p.z);
   if (!seat && r < 1.2) p.multiplyScalar(1.2 / Math.max(r, 0.001));   // 불 속으로는 안 들어감
@@ -1285,6 +1319,8 @@ function startWalk(point, seat = null, lie = false) {
   walkLie = lie;
   walkBoost = pose === 'walk' && walkTo ? Math.min(3, walkBoost + 0.6) : 1;   // 걷는 중에 또 누르면 빨라짐
   walkTo = p; walkSeat = seat; pose = 'walk';
+  currentSpot = targetSpot;
+  sendPresenceNow();
 }
 function updateWalk(dt, t) {
   if (walkTo) {
@@ -1293,8 +1329,9 @@ function updateWalk(dt, t) {
       walkTo = null;
       walkBoost = 1;   // 도착하면 다시 보통 걸음
       if (walkSeat) {
-        me.position.x = walkSeat.position.x; me.position.z = walkSeat.position.z;
-        faceToward(-walkSeat.position.x, -walkSeat.position.z);
+        const position = walkSeat.getWorldPosition(new THREE.Vector3());
+        me.position.x = position.x; me.position.z = position.z;
+        faceToward(-position.x, -position.z);
         pose = 'sit'; walkSeat = null;
         toast('의자에 앉았어요');
       } else if (walkLie) {
@@ -1354,14 +1391,15 @@ function updateWalk(dt, t) {
 // 바닥 클릭 → 걷기, 의자 클릭 → 앉기 (드래그와 구분: 6px 이내만 클릭)
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
-let downAt = null;
-renderer.domElement.addEventListener('pointerdown', e => { if (e.button === 0) downAt = [e.clientX, e.clientY]; });
+const tapGesture = createTapGesture();
+renderer.domElement.addEventListener('pointerdown', e => tapGesture.down(e));
+renderer.domElement.addEventListener('pointermove', e => tapGesture.move(e));
+renderer.domElement.addEventListener('pointercancel', e => tapGesture.cancel(e));
+window.addEventListener('blur', () => tapGesture.reset());
 renderer.domElement.addEventListener('pointerup', e => {
-  if (!downAt || e.button !== 0) return;
-  const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
-  downAt = null;
-  if (moved > 6) return;
-  pointer.set(e.clientX / window.innerWidth * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  if (!tapGesture.up(e) || !entered) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
   // 캠프에 놓은 장비(해먹·망원경·아이스박스·랜턴) → 각자 동작
   const gearHit = raycaster.intersectObjects(campInteract.map(i => i.obj), true)[0];
@@ -1374,7 +1412,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (seatHit) {
     let o = seatHit.object;
     while (o && !seats.includes(o)) o = o.parent;
-    if (o) { startWalk(o.position, o); return; }
+    if (o) { startWalk(o.getWorldPosition(new THREE.Vector3()), o); return; }
   }
   const facHit = raycaster.intersectObjects(facilities.map(f => f.group), true)[0];   // 샤워장·개수대 → 앞까지
   if (facHit) {
@@ -2066,7 +2104,19 @@ function connectChat() {
     // (원본, 2026-10-30 송찬영 [AI]) if (m.type === 'welcome') { myName = m.name; chatRetry = 0; setChatReady(true); }
     if (m.type === 'welcome') {
       myName = m.name; chatRetry = 0; setChatReady(true);
-      myId = m.id; (m.peers || []).forEach(addRemote);   // 먼저 와 있던 사람들
+      myId = m.id; (m.peers || []).forEach(addRemote);
+      currentSpot = m.spot ?? null;
+      const initialChair = currentSpot?.startsWith('seat:') ? seats[Number(currentSpot.slice(5))] : null;
+      if (initialChair) {
+        me.position.copy(initialChair.getWorldPosition(new THREE.Vector3()));
+        pose = 'sit'; sitBlend = 1; lieBlend = 0;
+        faceToward(-me.position.x, -me.position.z);
+      } else {
+        const angle = m.id * 2.39996;
+        me.position.set(Math.sin(angle) * 4.5, 0, Math.cos(angle) * 4.5);
+        pose = 'stand'; sitBlend = 0; lieBlend = 0;
+      }
+      walkTo = null; walkSeat = null; walkLie = false;   // 먼저 와 있던 사람들
       lastSent = '';                                     // 내 자리를 바로 한 번 알림
       if (wantNick && wantNick !== myName) sendNick(wantNick);   // 정해 둔 닉네임으로
       updateNick();
@@ -2076,6 +2126,8 @@ function connectChat() {
   };
   ws.onclose = () => {
     setChatReady(false);
+    currentSpot = null; occupiedSpots.clear();
+    walkTo = null; walkSeat = null; walkLie = false; pose = 'stand';
     chatWs = null;
     clearRemotes();   // 끊기면 다른 사람 아바타 지움 (다시 붙으면 welcome 으로 다시 받음)
     setTimeout(connectChat, Math.min(10000, 1000 * 2 ** chatRetry++));   // 1·2·4·8·10초… 다시 붙음
@@ -2106,7 +2158,7 @@ function addRemote(p) {
   g.rotation.order = 'YXZ';
   copyLook(g);
   const tag = makeNameTag(p.name);
-  const r = { id: p.id, name: p.name, g, tag, tx: p.x ?? 0, tz: p.z ?? 0, tyaw: p.yaw ?? 0, pose: p.pose ?? 'stand', lieSpot: p.lieSpot ?? 'mat',
+  const r = { id: p.id, name: p.name, spot: p.spot ?? null, g, tag, tx: p.x ?? 0, tz: p.z ?? 0, tyaw: p.yaw ?? 0, pose: p.pose ?? 'stand', lieSpot: p.lieSpot ?? 'mat',
     sit: p.pose === 'sit' ? 1 : 0, lie: p.pose === 'lie' ? 1 : 0, phase: 0, waveUntil: 0,
     armL: g.getObjectByName('armL'), armR: g.getObjectByName('armR'), hips: [g.getObjectByName('hip0'), g.getObjectByName('hip1')], knees: [g.getObjectByName('knee0'), g.getObjectByName('knee1')] };
   g.position.set(r.tx, 0, r.tz);
@@ -2130,8 +2182,22 @@ function waveAt(r) {   // 그 사람 쪽을 보고 손 흔들기 (앉거나 누�
   waveUntil = clock.elapsedTime + 2.2;
 }
 function onPresence(m) {   // 처리했으면 true
+  if (m.type === 'spot-busy') {
+    if (m.spot !== currentSpot) return true;   // ignore a reply to an older destination
+    occupiedSpots = new Set(m.occupied || []);
+    currentSpot = null; walkTo = null; walkSeat = null; walkLie = false; afterArrive = null; pose = 'stand';
+    const chair = freeChair();
+    if (chair) {
+      startWalk(chair.getWorldPosition(new THREE.Vector3()), chair);
+      toast('먼저 온 분이 있어 빈 의자로 갈게요');
+    } else { sendPresenceNow(); toast('빈 자리가 없어요 — 잠시 기다려 주세요'); }
+    return true;
+  }
   if (m.type === 'join') { addRemote(m); toast(`${m.name}님이 들어왔어요`); return true; }
-  if (m.type === 'leave') { removeRemote(m.id); return true; }
+  if (m.type === 'leave') {
+    const r = remotes.get(m.id); if (r?.spot) occupiedSpots.delete(r.spot);
+    removeRemote(m.id); return true;
+  }
   if (m.type === 'name') {
     const r = remotes.get(m.id);
     if (r) { r.name = m.name; scene.remove(r.tag); r.tag = makeNameTag(m.name); scene.add(r.tag); }
@@ -2140,7 +2206,8 @@ function onPresence(m) {   // 처리했으면 true
   if (m.type === 'state') {
     let r = remotes.get(m.id);
     if (!r) { addRemote(m); r = remotes.get(m.id); }
-    if (r) { r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; }
+    if (r?.spot && r.spot !== m.spot) occupiedSpots.delete(r.spot);
+    if (r) { r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; }
     return true;
   }
   if (m.type === 'act' && m.act === 'hello') {   // 서로 인사 — 나한테 하면 알려 주고 자동으로 답례
@@ -2158,10 +2225,19 @@ function onPresence(m) {   // 처리했으면 true
   return false;
 }
 const _rp = new THREE.Vector3();
+function spotIsTaken(spot) {
+  return occupiedSpots.has(spot) || [...remotes.values()].some(r => r.spot === spot);
+}
+function freeChair() { return seats.find((seat, i) => !spotIsTaken(`seat:${i}`)); }
+function sendPresenceNow() {
+  if (!chatWs || chatWs.readyState !== WebSocket.OPEN || myId === null) return;
+  chatWs.send(JSON.stringify({ type: 'state', x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2),
+    yaw: +me.rotation.y.toFixed(2), pose, lieSpot, spot: currentSpot }));
+}
 function presenceTick(dt, t) {
   // 내 상태 보내기 — 바뀌면 0.1초마다, 그대로면 2초마다
   if (chatWs && chatWs.readyState === WebSocket.OPEN && myId !== null) {
-    const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot };
+    const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot, spot: currentSpot };
     const key = JSON.stringify(s);
     if ((key !== lastSent && t - lastSentAt > 0.1) || t - lastSentAt > 2) {
       chatWs.send(JSON.stringify({ type: 'state', ...s })); lastSent = key; lastSentAt = t;
@@ -2237,12 +2313,15 @@ function setMode(next) {
 // });
 
 // ---------- 닉네임 — 들어갈 때 정하고, 왼쪽 위 이름을 눌러 바꿈. 머리 위에 작게 ----------
-let wantNick = (() => { try { return localStorage.getItem('camp-nick') || ''; } catch { return ''; } })();
+let wantNick = (() => { try { return localStorage.getItem('camp-nick') || randomNickname(); } catch { return randomNickname(); } })();
 let entered = false;
 const enterScreen = document.getElementById('enter-screen');
 const nickInput = document.getElementById('nick-input');
 const nickBtn = document.getElementById('nick-btn');
 nickInput.value = wantNick;
+if (matchMedia('(pointer: coarse)').matches) {
+  document.getElementById('control-hint').textContent = '바닥을 눌러 이동 · 쓸어 둘러보기 · 두 손가락 확대/축소';
+}
 const shownName = () => myName || wantNick || '나';
 function sendNick(n) { if (chatWs && chatWs.readyState === WebSocket.OPEN) chatWs.send(JSON.stringify({ type: 'name', name: n })); }
 function makeNameTag(text) {
@@ -2288,12 +2367,21 @@ document.getElementById('enter-form').addEventListener('submit', e => {
   const pick = Number(document.querySelector('input[name=server]:checked')?.value || SERVER);
   if (pick !== SERVER) {
     try { localStorage.setItem('camp-server', String(pick)); } catch {}
-    location.search = `?server=${pick}`;
+    location.href = entryRedirect(location.href, pick);
     return;
   }
-  enterScreen.classList.add('hide');
-  if (!entered) { entered = true; toast(`${SERVERS[SERVER].name} — 모닥불 앞에 앉았어요`); }
+  finishEntry();
 });
+function finishEntry() {
+  nickInput.blur();
+  enterScreen.classList.add('hide');
+  if (!entered) { entered = true; toast(`${SERVERS[SERVER].name} — 편히 쉬다 가세요`); }
+}
+const pendingEntry = consumeEntry(location.href);
+if (pendingEntry.enter) {
+  history.replaceState(null, '', pendingEntry.url);
+  finishEntry();
+}
 // 서버 고르기 — 처음 화면에 지금 서버 표시, 왼쪽 위 「서버N」을 누르면 다시 고름
 document.querySelector(`input[name=server][value="${SERVER}"]`).checked = true;
 const serverBtn = document.getElementById('server-btn');
