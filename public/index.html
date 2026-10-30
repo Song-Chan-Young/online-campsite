@@ -74,6 +74,26 @@
   .item:hover { background: var(--panel-hover); }
   .item .ic { font-size: 28px; line-height: 1; }
   .item small { color: var(--text-dim); font-size: 11px; }
+  .shop-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .shop-tabs button { flex: 1; appearance: none; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.2); color: var(--text-dim);
+    border-radius: 999px; padding: 7px 4px; font: inherit; font-size: 13px; cursor: pointer; }
+  .shop-tabs button[aria-selected="true"] { background: var(--panel-active); color: var(--text); border-color: rgba(255, 255, 255, 0.55); }
+  .shop-scroll { max-height: min(46vh, 360px); overflow-y: auto; overscroll-behavior: contain; padding: 3px; margin-bottom: 10px; }
+  .shop-cell { position: relative; display: flex; }
+  .shop-cell .item { flex: 1; border-width: 2px; }
+  .shop-cell .item.picked { border-color: #fff; box-shadow: 0 0 0 1px #fff inset; }
+  .shop-cell .item.rec::after { content: '추천'; position: absolute; left: 6px; top: 6px; font-size: 10px; color: #2a1606; background: var(--accent); border-radius: 999px; padding: 1px 6px; }
+  .shop-count { position: absolute; right: 6px; top: 6px; min-width: 22px; height: 22px; border-radius: 999px; background: #fff; color: #222;
+    font-size: 12px; font-weight: 700; line-height: 22px; pointer-events: none; }
+  .shop-minus { position: absolute; left: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.45); color: var(--text); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
+  .shop-foot { border-top: 1px solid var(--line); padding-top: 10px; margin-bottom: 12px; }
+  .shop-status { margin: 0 0 10px; font-size: 13px; color: var(--text); line-height: 1.5; min-height: 1.5em; }
+  .shop-actions { display: flex; gap: 8px; justify-content: center; }
+  .shop-actions button { appearance: none; border-radius: 999px; padding: 9px 18px; font: inherit; font-size: 14px; cursor: pointer; }
+  .shop-clear { border: 1px solid var(--line); background: transparent; color: var(--text-dim); }
+  .shop-checkout { border: 0; background: #fff; color: #222; font-weight: 700; }
+  .shop-checkout:disabled { opacity: 0.45; cursor: default; }
   .panel-close { appearance: none; border: 0; border-radius: 999px; padding: 9px 26px; font: inherit; font-size: 14px; background: var(--accent); color: #2a1606; cursor: pointer; }
   #map-canvas { width: 100%; height: auto; border-radius: 14px; margin-bottom: 12px; display: block; }
   #enter-form { display: flex; flex-direction: column; gap: 12px; align-items: center; }
@@ -169,17 +189,60 @@
     .chat-log {max-height:12vh;}
     .social-dialog {padding:18px;}
   }
-  #real-fire-dialog {position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;margin:0;padding:0;background:#080706;color:#f8e8d2;overflow:hidden;}
-  #real-fire-dialog::backdrop {background:#080706;}
-  #real-fire-video {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#080706;}
-  .fire-study-header {position:absolute;top:max(20px,env(safe-area-inset-top));left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
-  .fire-study-header h2 {margin:0;font-size:14px;font-weight:400;letter-spacing:.16em;text-shadow:0 2px 12px #000;}
-  .fire-study-header button,.fire-study-controls button {border:1px solid #ffffff35;background:#13100db3;color:#f8e8d2;border-radius:100px;min-height:44px;padding:10px 18px;font:inherit;cursor:pointer;backdrop-filter:blur(12px);}
-  .fire-study-controls {position:absolute;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:10px 16px;border:1px solid #ffffff20;border-radius:40px;background:#13100db3;backdrop-filter:blur(12px);max-width:calc(100vw - 32px);}
-  .fire-study-controls label {display:flex;align-items:center;gap:10px;font-size:12px;white-space:nowrap;}
-  .fire-study-controls input {width:110px;accent-color:#e8a26a;}
-  #fire-study-status {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;}
-  @media(max-width:520px) {.fire-study-header {left:16px;right:16px;}.fire-study-controls {gap:10px;}.fire-study-controls input {width:80px;}}
+  #wake-shade {position:fixed;inset:0;background:#080c08;z-index:8;pointer-events:none;}
+  /* 창 내리기 — 내리면 제목(과 매점 안내)만 남는 작은 막대가 됨. 누르면 다시 올라옴 */
+  .fold {appearance:none;border:1px solid var(--line);border-radius:999px;background:rgba(0,0,0,.2);color:var(--text-dim);font:inherit;font-size:12px;padding:4px 10px;cursor:pointer;touch-action:manipulation;}
+  .camp-tools > .fold, .chat > .fold {grid-column:1 / -1;justify-self:end;align-self:flex-end;min-height:30px;}
+  .camp-tools.folded, .chat.folded {width:auto;padding:5px;}
+  .camp-tools.folded > :not(.fold), .chat.folded > :not(.fold) {display:none !important;}
+  .camp-tools.folded > .fold, .chat.folded > .fold {color:var(--text);min-height:40px;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .panel > .fold {position:absolute;top:14px;right:14px;}
+  .panel.folded {max-height:none;overflow:visible;padding:12px 16px;}
+  .panel.folded > :not(h2):not(.fold):not(.shop-foot) {display:none !important;}
+  .panel.folded h2 {font-size:16px;text-align:left;padding-right:84px;}
+  .panel.folded .shop-foot {border:0;padding:4px 0 0;margin:0;}
+  .panel.folded .shop-actions {display:none;}
+  .panel.folded .shop-status {margin:0;text-align:left;}
+  @media (pointer:coarse),(max-width:700px) {
+    /* 모바일 — 노치·홈 인디케이터를 피하고, 장면을 가리지 않는 아래 시트 */
+    .panel {top:auto;bottom:max(8px,env(safe-area-inset-bottom));transform:translateX(-50%);width:calc(100vw - 16px);max-height: min(72dvh, 680px);padding:16px 14px calc(14px + env(safe-area-inset-bottom));border-radius:22px;}
+    .panel.wide {width:calc(100vw - 16px);}
+    #shop-panel {display:flex;flex-direction:column;overflow:hidden;}
+    #shop-panel[hidden] {display:none;}
+    #shop-panel .shop-scroll {flex:1 1 auto;min-height:100px;max-height:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;grid-template-columns:repeat(3,minmax(0,1fr));}
+    #shop-panel .shop-foot {flex:0 0 auto;padding-top:8px;margin-bottom:8px;}
+    #shop-panel .shop-status {max-height:3.2em;overflow:auto;}
+    .shop-actions button {min-height:46px;}
+    .item {min-height:82px;padding:10px 5px 9px;}
+    .item .ic {font-size:26px;}
+    .panel-close {min-height:44px;}
+    .panel.folded {bottom:calc(max(16px,env(safe-area-inset-bottom)) + 76px);}
+    .camp-tools.folded {right:auto;}
+    .chat.folded {left:auto;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 86px);}
+    body.tools-folded .chat:not(.folded) {bottom:calc(max(16px,env(safe-area-inset-bottom)) + 140px);}
+  }
+  @media (pointer:coarse) and (max-width:430px) {
+    .top {top:max(6px,env(safe-area-inset-top));left:6px;right:6px;}
+    .title {display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:3px;padding:5px 8px;border-radius:18px;}
+    .title b {font-size:14px;}
+    .title #nick-btn {display:none;}
+    .title button {max-width:none;min-height:38px;padding:0 7px;font-size:12px;}
+    #season-btn,#server-btn {border-left:1px solid var(--line);margin:0;}
+    .top-right {gap:5px;}
+    .icon-btn {width:40px;height:40px;}
+    .dock {left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-width:none;transform:none;gap:2px;padding:5px;border-radius:22px;}
+    .dock button {min-height:50px;padding:6px 2px;gap:3px;font-size:11px;}
+    .dock svg {width:21px;height:21px;}
+    .camp-tools.folded,.chat.folded {bottom:calc(max(8px,env(safe-area-inset-bottom)) + 62px);}
+    .camp-tools.folded > .fold,.chat.folded > .fold {min-height:36px;font-size:11px;}
+    .toast {top:calc(max(52px,env(safe-area-inset-top)) + 48px);}
+  }
+  @media (pointer:coarse) and (max-height:700px) {
+    .panel {max-height:78dvh;padding-top:12px;}
+    .panel-sub {margin-bottom:8px;font-size:12px;}
+    #shop-panel .shop-scroll {min-height:80px;}
+    .camp-tools.folded,.chat.folded {bottom:calc(max(6px,env(safe-area-inset-bottom)) + 58px);}
+  }
 </style>
 <!-- (원본, 2026-10-30 송찬영 [AI]) CDN — 서버(server.mjs)가 node_modules/three 를 /vendor/three/ 로 직접 줌
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -217,13 +280,9 @@
   <button id="quiet-toggle" type="button" aria-pressed="true">🌙 조용히 쉬는 중</button>
   <button id="invite-btn" type="button">🔗 옆자리 초대</button>
   <button id="gift-btn" type="button">🍡 마시멜로 건네기</button>
+  <button id="add-log" type="button" hidden>🪵 장작 더 넣기</button>
 </aside>
-<dialog id="real-fire-dialog" aria-labelledby="fire-study-title">
-  <video id="real-fire-video" playsinline muted loop preload="none" aria-label="실제 촬영한 불멍, 텐트 안 아침 또는 오로라와 별이 보이는 밤하늘"></video>
-  <div class="fire-study-header"><h2 id="fire-study-title">가만히, 이 불 앞에서</h2><button id="fire-study-close" type="button">캠핑장으로 돌아가기</button></div>
-  <p id="fire-study-status" role="status">불 앞에 자리를 준비하는 중…</p>
-  <div class="fire-study-controls"><button id="ambient-replay" type="button">재생</button><button id="fire-study-mute" type="button">소리 끄기</button><label>소리 <input id="fire-study-volume" type="range" min="0" max="100" value="65" aria-label="환경음 소리 크기"></label></div>
-</dialog>
+<div id="wake-shade" hidden aria-hidden="true"></div>
 <dialog id="invite-dialog" class="social-dialog pill" aria-labelledby="invite-title">
   <h2 id="invite-title">옆자리에서 같이 쉴까요?</h2>
   <p>이 링크로 들어오면 같은 캠프의 가까운 빈 의자로 안내해요.</p>
@@ -251,11 +310,11 @@
   </button>
   <button id="btn-stars" type="button" aria-pressed="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4Z"/><path d="M18 15l.7 1.8 1.8.7-1.8.7L18 20l-.7-1.8-1.8-.7 1.8-.7ZM5 16l.5 1.2 1.2.5-1.2.5L5 19.4l-.5-1.2-1.2-.5 1.2-.5Z"/></svg>
-    오로라 · 별보기
+    별보기
   </button>
   <button id="btn-morning" type="button" aria-pressed="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7V4M5.6 10.6 3.5 8.5M18.4 10.6l2.1-2.1"/><path d="M15 4.5c1-.8 2.2-.8 3 0 .8-.8 2-.8 3 0"/></svg>
-    텐트 안 아침
+    아침새소리
   </button>
 </nav>
 
@@ -263,8 +322,16 @@
 <!-- 매점 · 가방 · 시설안내도 창 -->
 <div class="panel pill" id="shop-panel" hidden role="dialog" aria-label="카페 · 매점">
   <h2>카페 · 매점</h2>
-  <p class="panel-sub">필요한 걸 가져가세요</p>
-  <div class="item-grid" id="shop-items"></div>
+  <p class="panel-sub">고른 뒤 「가방에 담기」를 누르세요 · 여러 번 누르면 수량이 늘어요</p>
+  <div class="shop-tabs" role="tablist" id="shop-tabs"></div>
+  <div class="item-grid shop-scroll" id="shop-items"></div>
+  <div class="shop-foot">
+    <p class="shop-status" id="shop-status" role="status" aria-live="polite">아직 고른 물건이 없어요</p>
+    <div class="shop-actions">
+      <button class="shop-clear" id="shop-clear" type="button">선택 비우기</button>
+      <button class="shop-checkout" id="shop-checkout" type="button">가방에 담기</button>
+    </div>
+  </div>
   <button class="panel-close" type="button">닫기</button>
 </div>
 <div class="panel pill" id="bag-panel" hidden role="dialog" aria-label="가방">
@@ -318,7 +385,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCampfireFlames, createEmberTexture, createBurningWood } from './camp-fire.mjs';
 import { ForestSound } from './forest-sound.mjs';
-import { AmbientMedia } from './ambient-media.mjs';
+import { FieldAudio } from './field-audio.mjs';
+import { createAurora } from './camp-aurora.mjs';
+import { createDetailedTent } from './camp-tent.mjs';
+import { createShopCart } from './shop-cart.mjs';
+import { EXTRA_GEAR, recommendedGearIds, createGearProp } from './camp-catalog.mjs';
+import { createMaltese } from './camp-dog.mjs';
+import { createWaterSlide } from './camp-slide.mjs';
 import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
 import { inviteAddress, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
 
@@ -703,8 +776,8 @@ let treeLeaves;
   for (const mesh of [trunks, leavesA, leavesB]) { mesh.castShadow = true; mesh.receiveShadow = true; scene.add(mesh); }
   treeLeaves = { a: leavesA, b: leavesB, n: treeCount, r: Array.from({ length: treeCount }, () => [Math.random(), Math.random(), Math.random()]) };   // 계절 색 바꿀 때
   // 둥근 잎나무(봄 꽃나무 · 가을 단풍나무) — 같은 자리에 뭉게 수관 3덩이. 침엽수 원뿔과 계절 따라 바꿔 보임
-  const canopyGeo = new THREE.IcosahedronGeometry(1, 1);
-  const canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+  const canopyGeo = new THREE.IcosahedronGeometry(1, 2);
+  const canopyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: false });
   const pieces = [[0, 2.75, 0, 1.25], [0.62, 2.35, 0.3, 0.9], [-0.55, 2.45, -0.38, 0.95]];   // [x, y, z, 반지름]
   const canopy = pieces.map(() => new THREE.InstancedMesh(canopyGeo, canopyMat, treeCount));
   const tm = new THREE.Matrix4(), tp = new THREE.Vector3(), tq = new THREE.Quaternion(), ts = new THREE.Vector3(), off = new THREE.Vector3();
@@ -721,25 +794,14 @@ let treeLeaves;
 }
 
 // ---------- 텐트 · 의자 · 랜턴 ----------
+const campTent = createDetailedTent(THREE);
 {
-  const tent = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.ConeGeometry(2.1, 2.5, 4, 1), new THREE.MeshStandardMaterial({ color: 0xc8783a, roughness: 0.85, flatShading: true }));
-  body.position.y = 1.25; body.rotation.y = Math.PI / 4;
-  const door = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.5, 3, 1), new THREE.MeshStandardMaterial({ color: 0x2b1a10, roughness: 1 }));
-  door.position.set(0, 0.75, 1.02); door.rotation.y = Math.PI;
-  tent.add(body, door);
-  tent.traverse(o => { o.castShadow = true; o.receiveShadow = true; });
-  // (원본, 2026-10-30 송찬영 [AI]) tent.position.set(-4.3, 0, -3.2);
-  tent.position.set(-4.3, DECK_H, -3.2);   // A구역 데크1 위
-  tent.lookAt(0, 0, 0);
-  // 겨울 — 텐트 위 눈 (꼭대기를 덮는 흰 원뿔). 계절 테마가 켜고 끔
-  const snowCap = new THREE.Mesh(new THREE.ConeGeometry(1.32, 1.55, 4, 1), new THREE.MeshStandardMaterial({ color: 0xf6f9fb, roughness: 0.95, flatShading: true }));
-  snowCap.position.y = 2.5 - 1.55 / 2 + 0.06; snowCap.rotation.y = Math.PI / 4; snowCap.scale.setScalar(1.03);
-  snowCap.name = 'tent-snow'; snowCap.visible = false; snowCap.castShadow = true;
-  tent.add(snowCap);
+  const tent = campTent.group;
+  tent.position.set(-4.3, DECK_H, -3.2);
+  // (원본, 2026-10-30 송찬영 [AI]) tent.lookAt(-7, DECK_H, -18);   — 아침에 눈뜨면 차·P 표지판이 보여서 동북동 숲 쪽으로 돌림
+  tent.lookAt(9.9, DECK_H, -8.0);   // 입구는 캠핑장 동쪽 숲 가장자리를 향함 (아침 기상 시점)
   scene.add(tent);
-  if (SERVER === 2) tent.visible = false;   // 차박 — 차 지붕 텐트가 내 텐트
-
+  if (SERVER === 2) tent.visible = false;
   const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 10), new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffb050, emissiveIntensity: 1.6 }));
   // (원본, 2026-10-30 송찬영 [AI]) lantern.position.set(-2.7, 0.14, -1.6);
   lantern.position.set(-2.7, 0.14 + DECK_H, -1.6);
@@ -1070,8 +1132,10 @@ function makeGuideBoard() {   // 화장실 옆 안내판 — 앞면 = +z
 }
 
 // 지도 좌표(px)에 놓기. rotY 0 = 앞면 남쪽(+z). clickable 이면 클릭 시 앞까지 걸어감
+const mapObjects = [];   // 지도에 놓은 건물·데크·차 — 캠핑 장비 자리를 고를 때 피함
 function placeOnMap(obj, px, py, rotY = 0, clickable = false) {
   const p = mw(px, py);
+  mapObjects.push(obj);
   obj.position.set(p.x, 0, p.z);
   obj.rotation.y = rotY;
   obj.traverse(o => { if (o.isMesh && o.material.type !== 'MeshBasicMaterial') { o.castShadow = true; o.receiveShadow = true; } });
@@ -1369,6 +1433,7 @@ function goLie() { if (pose !== 'lie') startWalk(MAT_FOOT, null, true); }
 function goSeat() { if (pose === 'lie' || walkLie) startWalk(seats[0].getWorldPosition(new THREE.Vector3()), seats[0]); }
 // (원본, 2026-10-30 송찬영 [AI]) function startWalk(point, seat = null) {
 function startWalk(point, seat = null, lie = false) {
+  if (slideRide) return;   // 미끄럼틀 타는 중엔 못 감
   // (원본, 2026-10-30 송찬영 [AI]) walkLie = lie;   — 못 가는 곳이면 그대로 두려고 아래로 옮김
   let targetSpot = seat ? `seat:${seats.indexOf(seat)}` : lie ? `lie:${lie === true ? 'mat' : lie.spot}` : null;
   if (targetSpot && spotIsTaken(targetSpot)) {
@@ -1444,6 +1509,7 @@ function updateWalk(dt, t) {
   // (원본, 2026-10-30 송찬영 [AI]) swimK = onPier(me.position.x, me.position.z) ? 0 : THREE.MathUtils.clamp((waterDist(me.position.x, me.position.z) - BEACH_W) / 2, 0, 1);
   swimK = onPier(me.position.x, me.position.z) || seasonKey === 'winter' ? 0   // 겨울엔 얼음 위라 안 잠김
     : THREE.MathUtils.clamp((waterDist(me.position.x, me.position.z) - BEACH_W) / 2, 0, 1);
+  if (swimK < 0.2 && !slideRide) swimTube.visible = false;
   me.rotation.x = -Math.PI / 2 * lieBlend;   // 등을 대고 누움 (얼굴이 하늘)
   me.rotation.z = lieSpot === 'hammock' ? Math.sin(t * 1.1) * 0.08 * lieBlend : 0;   // 해먹은 살랑살랑
   pack.visible = lieBlend < 0.5;
@@ -1476,7 +1542,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   pointer.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
   // 캠프에 놓은 장비(해먹·망원경·아이스박스·랜턴) → 각자 동작
-  const gearHit = raycaster.intersectObjects(campInteract.map(i => i.obj), true)[0];
+  const gearHit = raycaster.intersectObjects(campInteract.filter(i => i.obj.visible).map(i => i.obj), true)[0];
   if (gearHit) {
     const it = campInteract.find(i => { let o = gearHit.object; while (o && o !== i.obj) o = o.parent; return !!o; });
     if (it) { it.onClick(); return; }
@@ -1516,14 +1582,20 @@ scene.add(fire);
 const logs = [];
 function addLog(dropIn = false) {
   const burning = createBurningWood(THREE, rand() * 20);
-  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.12, 1.0, 12), burning.material);
+  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.12, 1.0, 20, 8), burning.material);
   log.userData.burning = burning;
-  log.userData.burnAge = dropIn ? 0 : 20 + logs.length * 14;
-  const a = rand() * Math.PI;
+  // A newly added log is already catching fire when it lands, so it reads as
+  // part of the burning pile instead of a cold piece disappearing in the flame.
+  log.userData.burnAge = dropIn ? 20 : 20 + logs.length * 14;
+  const a = (logs.length % 2 ? Math.PI / 2 : 0) + (rand() - 0.5) * 0.18;
   log.rotation.set(Math.PI / 2 - 0.35, a, 0, 'YXZ');
-  log.position.set((rand() - 0.5) * 0.15, 0.22 + logs.length * 0.015, (rand() - 0.5) * 0.15);
+  const layer = Math.floor(logs.length / 2);
+  const offset = dropIn ? 0.2 : 0.09;
+  const landY = 0.28 + layer * 0.07;
+  log.userData.landY = landY;
+  log.position.set(Math.cos(a) * offset, landY, Math.sin(a) * offset);
   log.castShadow = true;
-  log.userData.dropFrom = dropIn ? 1.2 : 0;
+  log.userData.dropFrom = dropIn ? 0.85 : 0;
   fire.add(log);
   logs.push(log);
   if (logs.length > 7) {
@@ -1546,7 +1618,8 @@ for (let i = 0; i < 14; i++) {
 const fireLight = new THREE.PointLight(0xff8a3a, 20, 30, 1.4);
 fireLight.position.set(0, 1.0, 0);
 fireLight.castShadow = true;
-fireLight.shadow.mapSize.set(512, 512);
+fireLight.shadow.mapSize.set(1024, 1024);
+fireLight.shadow.radius = 3;
 fireLight.shadow.bias = -0.002;
 scene.add(fireLight);
 
@@ -1566,7 +1639,7 @@ function resetSpark(i, spread = 1) {
 }
 for (let i = 0; i < sparkCount; i++) resetSpark(i);
 
-let fireLevel = 0.45;
+let fireLevel = 0.45, visualFireLevel = 0.45;
 let crackleFlash = 0, nextCrackleAt = 0;
 function emitFireCrackle(strength) {
   crackleFlash = Math.min(1, 0.45 + strength * 0.4);
@@ -1604,6 +1677,7 @@ class Sound {
       this.fireBed = this.loopNoise('lowpass', 380, 0.7);
       this.windBed = this.loopNoise('bandpass', 520, 0.35);
       this.forest = new ForestSound(c, this.master);
+      this.recording = new FieldAudio(c, this.master);
 
       // 숲 울림(잔향) — 새소리·풀벌레·장작을 조금씩 보냄
       this.reverb = this.makeReverb(2.6, 3.2);
@@ -1625,6 +1699,7 @@ class Sound {
       }));
     }
     if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.recording?.play(mode === 'morning' ? 'morning' : 'fire');
   }
   loopNoise(type, freq, q) {
     const c = this.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
@@ -1922,6 +1997,7 @@ function legPivot(parent, x, y, z, len, r, mat) {                     // 위쪽�
   parent.add(p);
   return p;
 }
+/* (원본, 2026-10-30 송찬영 [AI]) 갈색 강아지 — 흰 말티즈(camp-dog.mjs)로 교체
 function makeDog() {
   const g = new THREE.Group(), fur = stdMat(0xb07a45), light = stdMat(0xf0e0c8), dark = stdMat(0x2a1c14);
   g.add(box(0.32, 0.28, 0.62, fur, 0, 0.42, 0), box(0.26, 0.2, 0.2, light, 0, 0.36, 0.24));
@@ -1936,6 +2012,8 @@ function makeDog() {
   tail.rotation.x = -0.6; g.add(tail);
   return { g, legs, tail, head };
 }
+*/
+const makeDog = () => createMaltese(THREE);   // 흰 말티즈 — 다리·꼬리 관절은 걷기 동작과 같음
 function makeCat() {
   const g = new THREE.Group(), fur = stdMat(0xe09a4a), stripe = stdMat(0xb86a2a), light = stdMat(0xf6e6d0), dark = stdMat(0x1e1a16);
   g.add(box(0.22, 0.2, 0.42, fur, 0, 0.27, 0));
@@ -2135,6 +2213,32 @@ function applyTime(dt) {
   moon.visible = cur.moon > 0.01;
 }
 
+const aurora = createAurora(THREE);
+scene.add(aurora.group);
+let morningInside = false, waking = null;
+function endMorningView() {
+  waking = null; morningInside = false;
+  document.getElementById('wake-shade').hidden = true;
+  renderer.domElement.style.filter = '';
+  controls.enabled = true; controls.minDistance = 3;
+  me.visible = true; if (myTag) myTag.visible = true;
+  if (SERVER === 2) campTent.group.visible = false;
+}
+function beginMorningView() {
+  const view = campTent.interiorView();
+  campTent.group.visible = true; campTent.group.updateWorldMatrix(true, false);
+  document.getElementById('add-log').hidden = true;
+  morningInside = true; fireWatching = false; camHold = false; camTween = null;
+  const from = campTent.group.localToWorld(view.sleepPos.clone());
+  const to = campTent.group.localToWorld(view.awakePos.clone());
+  const target = campTent.group.localToWorld(view.target.clone());
+  waking = {time:0, from, to, target};
+  camera.position.copy(from); controls.target.copy(target);
+  controls.minDistance = .25; controls.maxPolarAngle = Math.PI * .75; controls.enabled = false;
+  const shade = document.getElementById('wake-shade'); shade.hidden = false; shade.style.opacity = 1;
+  me.visible = false; if (myTag) myTag.visible = false;
+}
+
 // ---------- 카메라 이동 ----------
 // (원본, 2026-10-30 송찬영 [AI]) stars: target (-4, 9, -12) — maxPolarAngle(0.495π) 에 걸려 카메라가 나무 높이로 밀려 올라감
 const VIEWS = {
@@ -2149,12 +2253,23 @@ let camTween = null;
 function flyTo(view) { flyToView(VIEWS[view]); }
 function flyToView(v) {   // { pos, target, maxPolar } 로 날아감
   fireWatching = v.closeFire === true;
+  document.getElementById('add-log').hidden = !fireWatching;
   controls.minDistance = fireWatching ? 1.35 : 3;
   // 올려다볼 땐 회전 제한을 먼저 풀고, 내려올 땐 도착한 뒤 다시 건다
   if (v.maxPolar > controls.maxPolarAngle) controls.maxPolarAngle = v.maxPolar;
   camTween = { t: 0, dur: 2.4, fromPos: camera.position.clone(), fromTarget: controls.target.clone(), toPos: v.pos, toTarget: v.target, maxPolar: v.maxPolar };
 }
 function updateCam(dt) {
+  if (waking) {
+    waking.time += dt;
+    const phase = Math.min(1, waking.time / 5.5), eased = phase * phase * (3 - 2 * phase);
+    camera.position.lerpVectors(waking.from, waking.to, eased);
+    controls.target.copy(waking.target);
+    document.getElementById('wake-shade').style.opacity = Math.max(0, 1 - Math.max(0, phase - .12) / .35);
+    renderer.domElement.style.filter = phase < .8 ? `blur(${(1 - phase / .8) * 4}px)` : '';
+    if (phase === 1) {waking = null; controls.enabled = true; document.getElementById('wake-shade').hidden = true;}
+    return;
+  }
   if (!camTween) return;
   camTween.t += dt;
   const x = Math.min(1, camTween.t / camTween.dur), e = x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
@@ -2507,16 +2622,14 @@ const btnStars = document.getElementById('btn-stars');
 const btnMorning = document.getElementById('btn-morning');
 function setMode(next) {
   const prev = mode;
-  mode = next;
-  // (원본, 2026-10-30 송찬영 [AI]) target = presetState(PRESETS[next]);
-  target = seasonPreset(next);   // 계절 하늘 반영 (여름은 파랗게)
+  if (morningInside) endMorningView();
+  mode = next; target = seasonPreset(next);
   btnStars.setAttribute('aria-pressed', String(next === 'night'));
   btnMorning.setAttribute('aria-pressed', String(next === 'morning'));
-  if (next === 'night') flyTo('stars');
-  else if (prev === 'night') flyTo('normal');
-  // 별보기·아침새소리는 매트에 누워서, 저녁으로 돌아오면 의자로
-  if (next === 'night' || next === 'morning') goLie();
-  else goSeat();
+  sound.recording?.play(next === 'morning' ? 'morning' : 'fire');
+  if (next === 'morning') beginMorningView();
+  else if (next === 'night') {flyTo('stars'); goLie();}
+  else {if (prev === 'night' || prev === 'morning') flyTo('normal'); goSeat();}
 }
 
 // (원본, 2026-10-30 송찬영 [AI]) 들어가기 버튼 클릭 — 닉네임 입력 폼으로 교체
@@ -2674,6 +2787,7 @@ const ITEMS = {
   rod: { cat: 'gear', name: '낚싯대', icon: '🎣', give: 1, keep: true, use: '데크 다리 끝으로 낚시하러 가요' },
   drink: { cat: 'hidden', name: '시원한 음료', icon: '🥤', give: 0, dur: 12, use: '시원한 음료 한 모금' },   // 아이스박스에서만
 };
+Object.assign(ITEMS, EXTRA_GEAR);   // 계절별 캠핑 장비 32가지 — 놓으면 3D 모델, 누르면 동작
 const HELD_ARM = { marshmallow: -1.35, sausage: -1.35, sweetpotato: -1.0, ramen: -1.05, coffee: -1.05, hotchoco: -1.05, watermelon: -1.1, drink: -1.05, rod: -1.25, guitar: -0.9 };   // 들 때 팔 각도
 const STICK_FOOD = new Set(['marshmallow', 'sausage']);   // 꼬치 — 불 가까이면 익음
 const loadJson = (key, def) => { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; } };
@@ -2685,9 +2799,34 @@ const campInteract = [];   // 캠프에 놓은 장비 — { obj, onClick }
 const registerInteract = (obj, onClick) => campInteract.push({ obj, onClick });
 // (원본, 2026-10-30 송찬영 [AI]) const panels = ['shop-panel', 'bag-panel', 'map-panel'].map(id => document.getElementById(id));
 const panels = ['shop-panel', 'bag-panel', 'map-panel', 'season-panel'].map(id => document.getElementById(id));
-function openPanel(id) { panels.forEach(p => { p.hidden = p.id !== id; }); if (id === 'bag-panel') renderBag(); if (id === 'map-panel') renderMapPanel(); }
+function openPanel(id) { panels.forEach(p => { p.hidden = p.id !== id; panelFolds.get(p).fold(false); }); if (id === 'shop-panel') renderShop(); if (id === 'bag-panel') renderBag(); if (id === 'map-panel') renderMapPanel(); }
 function closePanels() { panels.forEach(p => { p.hidden = true; }); }
 panels.forEach(p => p.querySelector('.panel-close').addEventListener('click', closePanels));
+
+// 창 내리기 — 모바일에서 창이 캠핑장을 가리지 않게. 내리면 작은 막대, 누르면 다시 올라옴
+const isMobile = () => matchMedia('(pointer:coarse),(max-width:700px)').matches;
+function makeFoldable(el, label) {   // label() — 내렸을 때 막대에 보일 글
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'fold';
+  const sync = () => {
+    const folded = el.classList.contains('folded');
+    b.textContent = folded ? `${label()} ▴` : '▾ 내리기';
+    b.setAttribute('aria-expanded', String(!folded));
+    if (el.id === 'camp-tools') document.body.classList.toggle('tools-folded', folded);
+  };
+  b.addEventListener('click', () => { el.classList.toggle('folded'); sync(); });
+  el.append(b);
+  return { fold(on = true) { el.classList.toggle('folded', on); sync(); }, sync };
+}
+const campToolsEl = document.getElementById('camp-tools'), chatEl = document.getElementById('chat');
+const toolsFold = makeFoldable(campToolsEl, () => '🧰 캠프 도구');
+const chatFold = makeFoldable(chatEl, () => { const last = chatLog.lastElementChild?.textContent; return last ? `💬 ${last}` : '💬 채팅'; });
+const panelFolds = new Map(panels.map(p => [p, makeFoldable(p, () => '올리기')]));
+if (isMobile()) { toolsFold.fold(); chatFold.fold(); }   // 모바일은 처음부터 내려 둠
+new MutationObserver(() => chatFold.sync()).observe(chatLog, { childList: true });   // 내려 둔 채팅 막대에 새 말 보이기
+document.getElementById('chat-form').addEventListener('submit', () => {   // 말을 보내면 키보드를 닫고 채팅을 내림
+  if (!isMobile()) return;
+  chatInput.blur(); setTimeout(() => chatFold.fold(), 0);
+});
 window.addEventListener('keydown', e => { if (e.key === 'Escape') closePanels(); });
 function itemButton(id, sub, onClick) {
   const it = ITEMS[id], b = document.createElement('button');
@@ -2707,6 +2846,7 @@ function itemButton(id, sub, onClick) {
 //     toast(`${ITEMS[id].name}을(를) 가방에 넣었어요`);
 //   }));
 // }
+/* (원본, 2026-10-30 송찬영 [AI]) renderShop — 누르면 바로 가방에 들어감. 고르고(흰 테두리·수량) 「가방에 담기」로 교체
 function renderShop() {
   const grid = document.getElementById('shop-items'); grid.replaceChildren();
   for (const [cat, title] of [['food', '먹을 것'], ['gear', '캠핑 장비']]) {
@@ -2721,6 +2861,72 @@ function renderShop() {
     }
   }
 }
+*/
+// 매점 — 누르면 고름(흰 테두리 + 수량, 또 누르면 +1), 「가방에 담기」를 눌러야 가방에 들어감
+const shopCart = createShopCart(ITEMS);
+const SHOP_TABS = [['food', '먹거리'], ['gear', '캠핑 장비'], ['season', '계절 추천']];
+let shopTab = 'food', shopNote = '';
+const shopCells = new Map();   // id → { cell, button, count, minus, sub }
+function shopIds(tab) {
+  if (tab === 'season') return recommendedGearIds(ITEMS, seasonKey).filter(id => ITEMS[id].seasons?.includes(seasonKey));
+  if (tab === 'gear') return recommendedGearIds(ITEMS, seasonKey);   // 이번 계절 장비가 앞으로
+  return Object.keys(ITEMS).filter(id => ITEMS[id].cat === tab);
+}
+function shopSub(id) {
+  const it = ITEMS[id];
+  if (it.keep && bag[id] > 0) return '가방에 있음';
+  return it.keep ? '도구 · 1개면 충분' : it.place ? '캠프에 놓기' : bag[id] > 0 ? `가방에 ${bag[id]}개` : '누를수록 +1';
+}
+function shopCell(id) {
+  const it = ITEMS[id], cell = document.createElement('div'); cell.className = 'shop-cell';
+  const button = itemButton(id, shopSub(id), () => { shopCart.select(id); shopNote = ''; updateShop(); });
+  if (it.seasons?.includes(seasonKey)) button.classList.add('rec');
+  const count = document.createElement('span'); count.className = 'shop-count';
+  const minus = document.createElement('button'); minus.type = 'button'; minus.className = 'shop-minus'; minus.textContent = '−';
+  minus.setAttribute('aria-label', `${it.name} 하나 빼기`);
+  minus.addEventListener('click', () => { shopCart.decrement(id); shopNote = ''; updateShop(); });
+  cell.append(button, count, minus);
+  shopCells.set(id, { cell, button, count, minus, sub: button.querySelector('small') });
+  return cell;
+}
+function renderShop() {
+  const tabs = document.getElementById('shop-tabs'); tabs.replaceChildren();
+  for (const [key, title] of SHOP_TABS) {
+    const b = document.createElement('button'); b.type = 'button'; b.role = 'tab'; b.textContent = title;
+    b.setAttribute('aria-selected', String(key === shopTab));
+    b.addEventListener('click', () => { if (shopTab === key) return; shopTab = key; renderShop(); document.getElementById('shop-items').scrollTop = 0; });
+    tabs.append(b);
+  }
+  const grid = document.getElementById('shop-items'), scroll = grid.scrollTop;
+  shopCells.clear(); grid.replaceChildren();
+  for (const id of shopIds(shopTab)) grid.append(shopCell(id));
+  grid.scrollTop = scroll;
+  updateShop();
+}
+function updateShop() {   // 다시 그리지 않고 상태만 고침 — 스크롤·포커스 유지
+  const counts = shopCart.counts();
+  for (const [id, c] of shopCells) {
+    const n = counts[id] || 0;
+    c.button.classList.toggle('picked', n > 0);
+    c.button.setAttribute('aria-pressed', String(n > 0));
+    c.count.hidden = c.minus.hidden = n === 0;
+    c.count.textContent = String(n);
+    c.sub.textContent = shopSub(id);
+  }
+  const picked = Object.entries(counts);
+  const summary = picked.length ? `고른 것: ${picked.map(([id, n]) => `${ITEMS[id].name} ${n}개`).join(', ')}` : '';
+  document.getElementById('shop-status').textContent = [shopNote, summary].filter(Boolean).join(' · ') || '아직 고른 물건이 없어요';
+  document.getElementById('shop-checkout').disabled = shopCart.total() === 0;
+}
+document.getElementById('shop-checkout').addEventListener('click', () => {
+  const r = shopCart.checkout(bag);   // 이미 가진 도구(기타·낚싯대)는 다시 안 담김
+  bag = r.bag; saveJson('camp-bag', bag);
+  shopNote = r.message;   // 창을 닫기 전까지 계속 보임
+  updateShop();
+  if (r.items.length && isMobile()) panelFolds.get(panels[0]).fold();   // 담았으면 내려서 캠핑장이 보이게 — 안내 글은 막대에 남음
+  if (r.items.length) toast(r.message);
+});
+document.getElementById('shop-clear').addEventListener('click', () => { shopCart.clear(); shopNote = ''; updateShop(); });
 function renderBag() {
   const grid = document.getElementById('bag-items'); grid.replaceChildren();
   const ids = Object.keys(ITEMS).filter(id => bag[id] > 0);
@@ -2903,6 +3109,7 @@ function holdItem(id, dur) {
   held = { id, until: clock.elapsedTime + dur, prop };
 }
 function stopActivity() {   // 자리를 뜨면 멈추는 것들
+  if (morningInside) {endMorningView(); flyTo('normal');}
   if (fireWatching) flyTo('normal');
   if (held && (held.id === 'guitar' || held.id === 'rod')) stopHeld();
   // (원본, 2026-10-30 송찬영 [AI]) if (camHold) { camHold = false; controls.maxPolarAngle = mode === 'night' ? Math.PI * 0.85 : Math.PI * 0.495; }
@@ -3062,6 +3269,46 @@ function placeCooler() {   // 누르면 가서 뚜껑 열고 시원한 음료
 const PLACE = { lantern: () => placeLantern(placed.lantern), hammock: placeHammock, relaxchair: placeRelaxChair, telescope: placeTelescope, cooler: placeCooler };
 for (let i = 0; i < Math.min(2, placed.lantern); i++) placeLantern(i);   // 지난번에 놓은 것 다시
 for (const k of ['hammock', 'relaxchair', 'telescope', 'cooler']) if (placed[k]) PLACE[k]();
+
+// 계절 장비 32가지 — 장비마다 정해진 자리. 불에서 가까운 빈 땅부터, 텐트·매트·다른 장비·길·물가는 피함
+const gearProps = [];
+const GEAR_SLOTS = (() => {
+  const busy = [[1.8, -2.4], [-0.6, 3.1], [-3.5, 2.9], [3.4, -2.2], [1.0, -3.7], [-1.6, -3.5]].map(([x, z]) => [campSpot(x, z), 1.7]);
+  busy.push([campTent.group.position, 3.6], [MAT_DIR.clone().multiplyScalar(3.85), 2.4]);
+  const blocked = mapObjects.map(o => new THREE.Box3().setFromObject(o).expandByScalar(0.9));   // 데크·차·건물 바닥
+  const road = ROAD_B.clone().sub(ROAD_A), roadLen = road.length(); road.divideScalar(roadLen);
+  const roadDist = p => { const t = THREE.MathUtils.clamp((p.x - ROAD_A.x) * road.x + (p.z - ROAD_A.z) * road.z, 0, roadLen); return Math.hypot(p.x - ROAD_A.x - road.x * t, p.z - ROAD_A.z - road.z * t); };
+  const need = Object.keys(EXTRA_GEAR).length;
+  let out = [];
+  for (let step = 2.4; out.length < need && step > 1.5; step -= 0.1) {   // 넓게 띄워 보고 모자라면 조금씩 좁힘
+    out = [];
+    for (let x = -step * 6; x <= step * 6; x += step) for (let z = -step * 6; z <= step * 6; z += step) {
+      const p = campSpot(x, z), r = Math.hypot(x, z);
+      if (r < 4.3 || r > 13 || !inMap(p.x, p.z, 1.2) || waterDist(p.x, p.z) > -1 || onPier(p.x, p.z) || roadDist(p) < ROAD_W / 2 + 1) continue;
+      if (busy.some(([q, d]) => Math.hypot(p.x - q.x, p.z - q.z) < d)) continue;
+      if (blocked.some(b => p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z)) continue;
+      out.push({ p, r });
+    }
+  }
+  return out.sort((a, b) => a.r - b.r).map(o => o.p);
+})();
+function placeGear(id) {
+  const slot = GEAR_SLOTS[Object.keys(EXTRA_GEAR).indexOf(id)];
+  if (!slot) return false;
+  const prop = createGearProp(THREE, id);
+  prop.group.position.copy(slot);
+  prop.group.lookAt(fire.position.x, 0, fire.position.z);   // 앞면이 모닥불 쪽
+  fire.parent.add(prop.group); campExtras.push(prop.group); gearProps.push(prop);
+  registerInteract(prop.group, () => {   // 누르면 앞까지 가서 사용
+    const front = slot.clone().addScaledVector(new THREE.Vector3(fire.position.x - slot.x, 0, fire.position.z - slot.z).normalize(), 1.1);
+    const use = () => { faceToward(slot.x - me.position.x, slot.z - me.position.z); toast(prop.interact()); };
+    startWalk(front);
+    if (walkTo) afterArrive = use; else use();
+  });
+  return true;
+}
+for (const id of Object.keys(EXTRA_GEAR)) PLACE[id] = () => placeGear(id);
+for (const id of Object.keys(EXTRA_GEAR)) if (placed[id]) placeGear(id);
 
 // 기타 — 의자에 앉아서 / 낚싯대 — 데크 다리 끝에서
 function startGuitar() {
@@ -3268,6 +3515,108 @@ const buoys = new THREE.Group();
 const ripple = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide }));
 ripple.rotation.x = -Math.PI / 2;
 scene.add(ripple);
+// 여름 워터 슬라이드 — 모래사장에서 사다리로 올라가 바다로 풍덩. 월드 좌표로 만들어져 있어 그대로 scene 에
+const SLIDE_SHIFT = 2.6;   // 사다리가 도로가 아닌 모래사장에 서게 바다 쪽으로 옮김
+const waterSlide = createWaterSlide(THREE, { start: WATER_A.clone().addScaledVector(WATER_N, SLIDE_SHIFT), end: WATER_B.clone().addScaledVector(WATER_N, SLIDE_SHIFT), normal: WATER_N, beachWidth: BEACH_W });
+scene.add(waterSlide.group);
+const SLIDE_CLIMB = 1.8, SLIDE_DECK = 0.7, SLIDE_DOWN = 4;   // 사다리 · 꼭대기 · 미끄러지는 초
+const SLIDE_DECK_Y = 2.5, SLIDE_SEAT = -0.4;                 // 꼭대기 바닥 높이 · 앉은 엉덩이를 미끄럼틀 바닥에 맞춤
+const slideLadderTop = waterSlide.top.clone().addScaledVector(waterSlide.entry.clone().sub(waterSlide.top).setY(0).normalize(), 0.75).setY(SLIDE_DECK_Y);
+const slideCamWant = new THREE.Vector3(), slideLook = new THREE.Vector3();
+let slideRide = null;   // { t0 } — 타는 동안은 다른 곳으로 걷지 않음
+// 밝은 파란색 튜브를 허리에 착용하고 미끄럼틀과 수영을 즐긴다.
+const swimTube = new THREE.Group();
+const tubeBlue = new THREE.MeshStandardMaterial({ color: 0x20aee8, roughness: 0.32 });
+const tubeWhite = new THREE.MeshStandardMaterial({ color: 0xf6fbff, roughness: 0.42 });
+const tubeRing = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.085, 12, 36), tubeBlue);
+tubeRing.rotation.x = Math.PI / 2; swimTube.add(tubeRing);
+for (let i = 0; i < 4; i++) {
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.11, 0.045), tubeWhite);
+  const a = i * Math.PI / 2; stripe.position.set(Math.cos(a) * 0.34, 0, Math.sin(a) * 0.34);
+  stripe.rotation.y = -a; swimTube.add(stripe);
+}
+swimTube.position.y = 0.72; swimTube.visible = false; me.add(swimTube);
+const slideSplash = new THREE.Group(), splashDrops = [];
+const splashMaterial = new THREE.MeshStandardMaterial({ color: 0xc9f4ff, emissive: 0x4aaacc, emissiveIntensity: 0.35, transparent: true, opacity: 0.9, roughness: 0.16 });
+for (let i = 0; i < 12; i++) {
+  const drop = new THREE.Mesh(new THREE.SphereGeometry(0.075 + (i % 3) * 0.018, 8, 6), splashMaterial);
+  slideSplash.add(drop); splashDrops.push(drop);
+}
+const splashRing = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.34, 28), new THREE.MeshBasicMaterial({ color: 0xd7f8ff, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+splashRing.rotation.x = -Math.PI / 2; slideSplash.add(splashRing); scene.add(slideSplash); slideSplash.visible = false;
+registerInteract(waterSlide.group, () => {
+  if (seasonKey !== 'summer' || slideRide) return;
+  startWalk(waterSlide.entry);
+  if (!walkTo) { toast('미끄럼틀 입구로 갈 수 없어요'); return; }
+  afterArrive = () => {
+    stopHeld();
+    slideRide = { t0: clock.elapsedTime };
+    swimTube.visible = true;
+    camHold = true; camTween = null;   // 카메라는 타는 사람 뒤를 따라감
+    toast('사다리를 올라가요');
+  };
+});
+function updateSlideRide(dt, t) {   // updateWalk 다음에 불러 위치·자세를 덮어씀
+  const e = t - slideRide.t0, up = slideLadderTop.clone().sub(waterSlide.entry).setY(0).normalize();
+  const rideEnd = SLIDE_CLIMB + SLIDE_DECK + SLIDE_DOWN;
+  swimK = 0;
+  me.rotation.x = 0;
+  if (e < SLIDE_CLIMB + SLIDE_DECK) {   // 사다리 → 꼭대기 데크
+    pose = 'walk';
+    if (e < SLIDE_CLIMB) {
+      const k = e / SLIDE_CLIMB;
+      me.position.lerpVectors(waterSlide.entry, slideLadderTop, k).setY(STAND_LIFT + SLIDE_DECK_Y * k);
+    } else {
+      me.position.lerpVectors(slideLadderTop, waterSlide.top, (e - SLIDE_CLIMB) / SLIDE_DECK).setY(STAND_LIFT + SLIDE_DECK_Y);
+    }
+    faceToward(up.x, up.z);
+    slideCamWant.copy(me.position).addScaledVector(up, -4.2).add(new THREE.Vector3(0, 1.8, 0));
+    slideLook.copy(me.position).addScaledVector(up, 2).setY(me.position.y + 0.6);
+    if (e >= SLIDE_CLIMB && !slideRide.launched) { slideRide.launched = true; toast('출발! 슝—'); if (sound.ready) sound.whoosh(); }
+  } else if (e < SLIDE_CLIMB + SLIDE_DECK + SLIDE_DOWN) {   // 앉아서 미끄러짐 — 처음엔 천천히, 갈수록 빠르게
+    pose = 'sit'; sitBlend = 1;
+    const k = (e - SLIDE_CLIMB - SLIDE_DECK) / SLIDE_DOWN, u = 0.35 * k + 0.65 * k * k;
+    const p = waterSlide.pointAt(u), dir = waterSlide.tangentAt(u);
+    me.position.set(p.x, p.y + SLIDE_SEAT, p.z);
+    faceToward(dir.x, dir.z);
+    me.rotation.x = -0.25;   // 살짝 뒤로 기댐
+    const flat = dir.clone().setY(0).normalize();
+    slideCamWant.copy(p).addScaledVector(flat, -2.8).add(new THREE.Vector3(0, 2.7, 0));   // 위에서 내려다봐 미끄럼틀 벽에 안 걸림
+    slideLook.copy(p).addScaledVector(flat, 3).setY(p.y - 0.4);
+  } else if (e < rideEnd + 0.72) {   // 물에 잠겼다가 튀어 오르는 풍덩 연출
+    const splashT = e - rideEnd, p = waterSlide.landing;
+    if (!slideRide.splashed) {
+      slideRide.splashed = true; slideSplash.position.set(p.x, 0.18, p.z); slideSplash.visible = true;
+      splashDrops.forEach((drop, i) => {
+        const a = i / splashDrops.length * Math.PI * 2, speed = 1.1 + (i % 4) * 0.18;
+        drop.userData.vx = Math.cos(a) * speed; drop.userData.vz = Math.sin(a) * speed;
+        drop.userData.vy = 2.1 + (i % 5) * 0.22; drop.position.set(0, 0, 0);
+      });
+      toast('풍덩!'); if (sound.ready) sound.whoosh();
+    }
+    pose = 'stand'; sitBlend = 0;
+    const dip = Math.sin(Math.min(1, splashT / 0.72) * Math.PI);
+    me.position.set(p.x, -0.72 * dip, p.z); me.rotation.x = dip * 0.3;
+    const f = THREE.MathUtils.clamp(splashT / 0.68, 0, 1);
+    splashDrops.forEach(drop => {
+      const v = drop.userData;
+      drop.position.set(v.vx * splashT, v.vy * splashT - 2.8 * splashT * splashT, v.vz * splashT);
+    });
+    splashRing.scale.setScalar(1 + splashT * 2.7); splashRing.material.opacity = Math.max(0, 0.8 * (1 - f));
+    splashMaterial.opacity = Math.max(0, 0.9 * (1 - f));
+    slideCamWant.set(p.x + 2.6, 2.5, p.z + 3.5); slideLook.set(p.x, 0.45, p.z);
+  } else {   // 풍덩 뒤에는 튜브를 낀 채 바다에서 수영
+    me.position.set(waterSlide.landing.x, 0, waterSlide.landing.z);
+    pose = 'stand'; sitBlend = 0;
+    slideSplash.visible = false; swimK = 1; camHold = false;
+    slideRide = null;
+    toast('튜브를 끼고 수영해요');
+    return;
+  }
+  const k = 1 - Math.exp(-dt * 5);
+  camera.position.lerp(slideCamWant, k);
+  controls.target.lerp(slideLook, k);
+}
 const seasonBtn = document.getElementById('season-btn');
 function applySeason(key, announce = false) {
   const S = SEASONS[key];
@@ -3289,6 +3638,8 @@ function applySeason(key, announce = false) {
   applyOutfit(key);                                      // 여름 반팔 · 겨울 경량패딩
   setupFall(S.fall);
   buoys.visible = key === 'summer';
+  waterSlide.group.visible = key === 'summer';   // 미끄럼틀은 여름만
+  if (!panels[0].hidden) renderShop();           // 계절 추천 다시
   if (key !== 'summer' && swimK > 0) startWalk(WATER_A.clone().lerp(WATER_B, 0.5).addScaledVector(WATER_N, BEACH_W - 2));   // 여름이 끝나면 물 밖으로
   seasonBtn.textContent = `${S.icon} ${S.name}`;
   document.querySelectorAll('#season-items .item').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === key)));
@@ -3310,32 +3661,6 @@ function applySeason(key, announce = false) {
   applySeason(loadJson('camp-season', null) ?? seasonOfMonth(new Date().getMonth()));   // 처음엔 지금 달의 계절
 }
 
-const realFireDialog = document.getElementById('real-fire-dialog');
-let ambientMedia = null;
-function openAmbientView(kind = 'fire') {
-  sound.unlock();
-  if (!sound.ctx) { toast('이 브라우저는 소리 재생을 지원하지 않아요'); return; }
-  if (!realFireDialog.open) realFireDialog.showModal();
-  document.getElementById('fire-study-title').textContent = kind === 'morning' ? '텐트 안에서 맞는 아침' : kind === 'stars' ? '오로라 아래, 별이 흐르는 밤' : '가만히, 장작 타는 시간';
-  document.getElementById('fire-study-volume').value = Math.round(sound.volume * 100);
-  document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
-  if (!ambientMedia) ambientMedia = new AmbientMedia(document.getElementById('real-fire-video'), document.getElementById('fire-study-status'), sound.ctx, sound.master);
-  ambientMedia.open(kind).catch(() => toast('재생 버튼을 눌러 다시 시작해 주세요'));
-}
-document.getElementById('ambient-replay').addEventListener('click', () => {
-  sound.unlock(); ambientMedia?.open(ambientMedia.kind);
-});
-document.getElementById('fire-study-close').addEventListener('click', () => realFireDialog.close());
-realFireDialog.addEventListener('close', () => { ambientMedia?.close(); if (fireWatching) flyTo('normal'); });
-document.getElementById('fire-study-mute').addEventListener('click', () => {
-  sound.unlock(); sound.setMuted(!sound.muted); renderMute();
-  document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
-});
-document.getElementById('fire-study-volume').addEventListener('input', event => {
-  volumeControl.value = event.target.value; volumeControl.dispatchEvent(new Event('input'));
-  document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
-});
-
 // 불멍 시점 — 내 의자 뒤 어깨 너머로 모닥불을 봄
 const seatWorld = s => s.getWorldPosition(new THREE.Vector3());
 function fireFocusView() {
@@ -3350,8 +3675,15 @@ document.getElementById('btn-fire').addEventListener('click', () => {
   sound.unlock();
   if (fireWatching) { flyTo('normal'); toast('캠핑장을 둘러볼게요'); return; }
   flyToView(fireFocusView());
-  openAmbientView();
 });
+document.getElementById('add-log').addEventListener('click', () => {
+  sound.unlock(); addLog(true);
+  fireLevel = Math.min(1, fireLevel + .28);
+  emitFireCrackle(.8);
+  if (sound.ready) sound.whoosh();
+  toast('장작을 하나 더 넣었어요');
+});
+
 
 let waveUntil = 0;
 // (원본, 2026-10-30 송찬영 [AI]) 인사 — 혼자 손 흔들기. 「사람끼리 서로 인사」 요청으로 교체
@@ -3372,14 +3704,13 @@ document.getElementById('btn-hello').addEventListener('click', () => {
 
 btnStars.addEventListener('click', () => {
   sound.unlock();
-  if (mode !== 'night') setMode('night');
-  openAmbientView('stars');
+  setMode(mode === 'night' ? 'evening' : 'night');
 });
 
 btnMorning.addEventListener('click', () => {
   sound.unlock();
-  if (mode !== 'morning') setMode('morning');
-  nextBird = 0; openAmbientView('morning');
+  setMode(mode === 'morning' ? 'evening' : 'morning');
+  nextBird = 0;
 });
 
 window.addEventListener('resize', () => {
@@ -3402,25 +3733,26 @@ renderer.setAnimationLoop(() => {
   // 불
   fireLevel = Math.max(0.15, fireLevel - dt * 0.0012);
   const flicker = 0.88 + Math.sin(t * 5.1) * 0.055 + Math.sin(t * 11.7) * 0.035 + Math.sin(t * 2.3) * 0.04;
-  naturalFire.update(t, fireLevel, camera);
+  visualFireLevel += (fireLevel - visualFireLevel) * (1 - Math.exp(-dt * 1.3));
+  naturalFire.update(t, visualFireLevel, camera);
   crackleFlash = Math.max(0, crackleFlash - dt * 2.5);
   if (t >= nextCrackleAt) {
     const strength = 0.45 + fireLevel * 0.55;
     emitFireCrackle(strength);
-    if (sound.ready && !realFireDialog.open) { sound.sizzle(strength); sound.crackle(strength * 0.5); }
+    if (sound.ready && !sound.recording?.active) { sound.sizzle(strength); sound.crackle(strength * 0.5); }
     nextCrackleAt = t + 0.7 + Math.random() * 2.1;
   }
   coals.forEach((coal, i) => {
     coal.material.emissiveIntensity = (0.45 + fireLevel * 0.9) * (0.8 + Math.sin(t * 1.7 + i * 2.3) * 0.2);
   });
-  fireLight.intensity = (6 + 34 * fireLevel) * flicker;
+  fireLight.intensity = (6 + 34 * visualFireLevel) * flicker;
   for (const log of logs) {
     log.userData.burnAge += dt;
     log.userData.crackle = Math.max(0, (log.userData.crackle || 0) - dt * 3.5);
     log.userData.burning.update(log.userData.burnAge, fireLevel, t, log.userData.crackle);
     if (log.userData.dropFrom > 0) {
       log.userData.dropFrom = Math.max(0, log.userData.dropFrom - dt * 3.5);
-      log.position.y = 0.25 + log.userData.dropFrom;
+      log.position.y = log.userData.landY + log.userData.dropFrom;
     }
   }
   const sparkTop = 1.2 + fireLevel * 1.6;
@@ -3452,6 +3784,7 @@ renderer.setAnimationLoop(() => {
 
   // 걷기 · 앉기
   const swing = updateWalk(dt, t);
+  if (slideRide) updateSlideRide(dt, t);   // 여름 미끄럼틀 타는 중
   // (원본, 2026-10-30 송찬영 [AI]) const armRest = swing === null ? -0.6 : -swing * 0.8;   // 걸을 땐 다리 반대로 팔 흔듦
   // (원본, 2026-10-30 송찬영 [AI]) armL.rotation.x += ((swing === null ? -0.6 : swing * 0.8) - armL.rotation.x) * Math.min(1, dt * 10);
   // 걸을 땐 다리 반대로 팔 흔듦, 누우면 팔베개(머리 뒤로 깍지)
@@ -3463,7 +3796,7 @@ renderer.setAnimationLoop(() => {
 
   // 카메라 따라가기 — 앉아 있으면 모닥불, 서 있거나 걸으면 나를 중심으로
   // (원본, 2026-10-30 송찬영 [AI]) if (!camTween && mode !== 'night') {
-  if (!camTween && mode !== 'night' && !camHold && !fireWatching) {
+  if (!camTween && mode !== 'night' && !camHold && !fireWatching && !morningInside) {
     const want = pose === 'sit' ? FIRE_VIEW_TARGET : followTarget.set(me.position.x, 1, me.position.z);
     const step = followStep.subVectors(want, controls.target).multiplyScalar(1 - Math.exp(-dt * 2.5));
     controls.target.add(step);
@@ -3510,7 +3843,7 @@ renderer.setAnimationLoop(() => {
   updateHeld(dt, t);     // 손에 든 것 (매점 물건)
 
   // 소리
-  if (sound.ready && !realFireDialog.open) {
+  if (sound.ready && !sound.recording?.active) {
     // (원본, 2026-10-30 송찬영 [AI]) sound.setBed(sound.fireBed, 0.05 + 0.2 * fireLevel);
     sound.setBed(sound.fireBed, 0.025 + 0.1 * fireLevel);   // 쉬— 깔림은 줄이고 타닥을 앞으로
     sound.setBed(sound.windBed, mode === 'morning' ? 0.008 : 0.015);
@@ -3529,12 +3862,14 @@ renderer.setAnimationLoop(() => {
     }
   }
 
-  if (realFireDialog.open && sound.ctx) {
-    // The recorded ambience is the complete soundscape here, without synthetic birds/clicks.
+  if (sound.ready && sound.recording?.active) {
     for (const bed of [sound.fireBed, sound.windBed, sound.insectBus]) sound.setBed(bed, 0);
     sound.forest.update(false, t);
   }
-  if (!realFireDialog.open) renderer.render(scene, camera);
+  aurora.update(t, cur.stars, camera);
+  campTent.update(t, mode === 'morning' ? .8 : .3);
+  for (const g of gearProps) g.update(t);   // 선풍기 날개 · 깃발 · 풍향계
+  renderer.render(scene, camera);
 });
 </script>
 </body>

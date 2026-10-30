@@ -1,7 +1,7 @@
 import {cp,mkdir,rm,stat} from 'node:fs/promises';
 const root=new URL('../',import.meta.url);
 const out=new URL('.build/site/',root);
-for (const name of ['campfire-real.mp4','tent-morning-real.mp4','aurora-stars-4k.mp4','fire-recording.mp3','forest-recording.mp3']) {
+for (const name of ['fire-recording.mp3','forest-recording.mp3']) {
   let info;
   try {info=await stat(new URL('public/assets/'+name,root));}
   catch {throw new Error(`Missing ambient media ${name}. See docs/media-sources.md.`);}

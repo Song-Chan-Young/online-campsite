@@ -11,7 +11,7 @@ function walker(taken) {
   const messages = [];
   const context = vm.createContext({
     THREE, seats, me:new THREE.Group(), pose:'stand', walkTo:null, walkSeat:null, walkLie:false,
-    walkFacility:null, afterArrive:null, walkBoost:1, currentSpot:null, lieSpot:'mat', myId:1,
+    walkFacility:null, afterArrive:null, walkBoost:1, currentSpot:null, lieSpot:'mat', myId:1, slideRide:null,
     remotes:new Map(taken.map((spot,i) => [i+2,{spot}])), occupiedSpots:new Set(),
     walkable:()=>true, stopActivity(){}, toast(){}, WebSocket:{OPEN:1},
     chatWs:{readyState:1, send:data=>messages.push(JSON.parse(data))},
