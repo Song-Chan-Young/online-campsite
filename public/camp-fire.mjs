@@ -123,11 +123,11 @@ export function createBurningWood(THREE, seed = 0) {
       totalEmissiveRadiance += vec3(1.6, 0.16, 0.012) * fissure * uWoodHeat;
     `);
   };
-  return {material, update(age, strength, time) {
+  return {material, update(age, strength, time, crackle = 0) {
     uniforms.uBurn.value = Math.min(1, age / 240);
     const ignition = Math.min(1, age / 8);
     const remaining = Math.max(0, 1 - Math.max(0, age - 150) / 100);
     uniforms.uWoodHeat.value = ignition * remaining * (0.55 + strength * 0.7)
-      * (0.86 + Math.sin(time * 1.8 + seed) * 0.14);
+      * (0.86 + Math.sin(time * 1.8 + seed) * 0.14) + crackle * 0.9;
   }};
 }

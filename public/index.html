@@ -173,6 +173,18 @@
     .chat-log {max-height:12vh;}
     .social-dialog {padding:18px;}
   }
+  #real-fire-dialog {position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;margin:0;padding:0;background:#080706;color:#f8e8d2;overflow:hidden;}
+  #real-fire-dialog::backdrop {background:#080706;}
+  #real-fire-canvas {position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1.2s;}
+  #real-fire-dialog[data-ready="true"] #real-fire-canvas {opacity:1;}
+  .fire-study-header {position:absolute;top:max(20px,env(safe-area-inset-top));left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .fire-study-header h2 {margin:0;font-size:14px;font-weight:400;letter-spacing:.16em;text-shadow:0 2px 12px #000;}
+  .fire-study-header button,.fire-study-controls button {border:1px solid #ffffff35;background:#13100db3;color:#f8e8d2;border-radius:100px;min-height:44px;padding:10px 18px;font:inherit;cursor:pointer;backdrop-filter:blur(12px);}
+  .fire-study-controls {position:absolute;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:10px 16px;border:1px solid #ffffff20;border-radius:40px;background:#13100db3;backdrop-filter:blur(12px);max-width:calc(100vw - 32px);}
+  .fire-study-controls label {display:flex;align-items:center;gap:10px;font-size:12px;white-space:nowrap;}
+  .fire-study-controls input {width:110px;accent-color:#e8a26a;}
+  #fire-study-status {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;}
+  @media(max-width:520px) {.fire-study-header {left:16px;right:16px;}.fire-study-controls {gap:10px;}.fire-study-controls input {width:80px;}}
 </style>
 <!-- (원본, 2026-10-30 송찬영 [AI]) CDN — 서버(server.mjs)가 node_modules/three 를 /vendor/three/ 로 직접 줌
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -212,6 +224,12 @@
   <button id="gift-btn" type="button">🍡 마시멜로 건네기</button>
   <button id="worry-btn" type="button">🔥 걱정 내려놓기</button>
 </aside>
+<dialog id="real-fire-dialog" aria-labelledby="fire-study-title">
+  <canvas id="real-fire-canvas" aria-label="장작과 얇은 불꽃을 가까이 바라보는 불멍 화면"></canvas>
+  <div class="fire-study-header"><h2 id="fire-study-title">가만히, 이 불 앞에서</h2><button id="fire-study-close" type="button">캠핑장으로 돌아가기</button></div>
+  <p id="fire-study-status" role="status">불 앞에 자리를 준비하는 중…</p>
+  <div class="fire-study-controls"><button id="fire-study-mute" type="button">소리 끄기</button><label>소리 <input id="fire-study-volume" type="range" min="0" max="100" value="65" aria-label="불멍 소리 크기"></label></div>
+</dialog>
 <dialog id="invite-dialog" class="social-dialog pill" aria-labelledby="invite-title">
   <h2 id="invite-title">옆자리에서 같이 쉴까요?</h2>
   <p>이 링크로 들어오면 같은 캠프의 가까운 빈 의자로 안내해요.</p>
@@ -253,7 +271,7 @@
   </button>
   <button id="btn-morning" type="button" aria-pressed="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7V4M5.6 10.6 3.5 8.5M18.4 10.6l2.1-2.1"/><path d="M15 4.5c1-.8 2.2-.8 3 0 .8-.8 2-.8 3 0"/></svg>
-    아침새소리
+    아침 숲속
   </button>
 </nav>
 
@@ -315,6 +333,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCampfireFlames, createEmberTexture, createBurningWood } from './camp-fire.mjs';
+import { ForestSound } from './forest-sound.mjs';
+import { createFirePhotoView } from './fire-photo-view.mjs';
 import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
 import { inviteAddress, burnPrivateWorry, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
 
@@ -1563,6 +1583,18 @@ function resetSpark(i, spread = 1) {
 for (let i = 0; i < sparkCount; i++) resetSpark(i);
 
 let fireLevel = 0.45;
+let crackleFlash = 0, nextCrackleAt = 0;
+function emitFireCrackle(strength) {
+  crackleFlash = Math.min(1, 0.45 + strength * 0.4);
+  if (logs.length) logs[Math.floor(Math.random() * logs.length)].userData.crackle = 1;
+  for (let n = 0; n < 3 + Math.floor(strength * 3); n++) {
+    const i = Math.floor(Math.random() * sparkCount);
+    resetSpark(i, 0);
+    sparkPos[i * 3] = (Math.random() - 0.5) * 0.65;
+    sparkPos[i * 3 + 1] = 0.18 + Math.random() * 0.12;
+    sparkVel[i] = 0.7 + Math.random() * 0.9;
+  }
+}
 
 // ---------- 소리 (Web Audio 합성 — 음원 파일 없음) ----------
 class Sound {
@@ -1587,6 +1619,7 @@ class Sound {
 
       this.fireBed = this.loopNoise('lowpass', 380, 0.7);
       this.windBed = this.loopNoise('bandpass', 520, 0.35);
+      this.forest = new ForestSound(c, this.master);
 
       // 숲 울림(잔향) — 새소리·풀벌레·장작을 조금씩 보냄
       this.reverb = this.makeReverb(2.6, 3.2);
@@ -1674,6 +1707,23 @@ class Sound {
       this.click(t, strength * (0.25 + Math.random() * 0.45));
       t += 0.008 + Math.random() * (Math.random() < 0.7 ? 0.04 : 0.12);
     }
+  }
+  sizzle(strength = 1) {
+    const c = this.ctx, t = c.currentTime + 0.01;
+    const src = c.createBufferSource(), hp = c.createBiquadFilter(), lp = c.createBiquadFilter(), gain = c.createGain();
+    src.buffer = this.noise;
+    hp.type = 'highpass'; hp.frequency.value = 1700;
+    lp.type = 'lowpass'; lp.frequency.value = 6200;
+    const duration = 0.22 + Math.random() * 0.42;
+    gain.gain.setValueAtTime(0, t);
+    for (let i = 0; i < 10; i++) {
+      const at = t + 0.008 + duration * i / 10;
+      gain.gain.linearRampToValueAtTime(strength * (0.018 + Math.random() * 0.055) * (1 - i / 11), at);
+    }
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    src.connect(hp); hp.connect(lp); lp.connect(gain); gain.connect(this.fireOut);
+    src.onended = () => {src.disconnect(); hp.disconnect(); lp.disconnect(); gain.disconnect();};
+    src.start(t, Math.random(), duration + 0.02);
   }
   // 크게 튀는 탁!
   snap(strength = 1) {
@@ -1771,7 +1821,7 @@ class Sound {
   birdOut(dist) {
     const c = this.ctx, lp = c.createBiquadFilter(), g = c.createGain(), send = c.createGain();
     lp.type = 'lowpass'; lp.frequency.value = 12000 - dist * 8000;
-    g.gain.value = 0.22 * (1 - dist * 0.75);
+    g.gain.value = 0.13 * (1 - dist * 0.75);
     send.gain.value = 0.15 + dist * 0.55;
     lp.connect(g);
     if (c.createStereoPanner) {
@@ -3295,6 +3345,38 @@ function applySeason(key, announce = false) {
   applySeason(loadJson('camp-season', null) ?? seasonOfMonth(new Date().getMonth()));   // 처음엔 지금 달의 계절
 }
 
+const realFireDialog = document.getElementById('real-fire-dialog');
+let photoFireView = null, photoFireReady = false;
+function openPhotoFire() {
+  if (!realFireDialog.open) realFireDialog.showModal();
+  document.getElementById('fire-study-volume').value = Math.round(sound.volume * 100);
+  document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
+  if (photoFireView) return;
+  try {
+    photoFireView = createFirePhotoView(THREE, document.getElementById('real-fire-canvas'), './assets/fire-study.jpg');
+    photoFireView.ready.then(() => {
+      photoFireReady = true; realFireDialog.dataset.ready = 'true';
+      document.getElementById('fire-study-status').hidden = true;
+    }).catch(() => {
+      realFireDialog.close(); photoFireView.dispose(); photoFireView = null;
+      toast('불멍 이미지를 불러오지 못했어요. 캠핑장의 불을 바라봐 주세요');
+    });
+  } catch {
+    realFireDialog.close();
+    toast('이 기기에서는 캠핑장의 불멍 시점을 이용해 주세요');
+  }
+}
+document.getElementById('fire-study-close').addEventListener('click', () => realFireDialog.close());
+realFireDialog.addEventListener('close', () => { if (fireWatching) flyTo('normal'); });
+document.getElementById('fire-study-mute').addEventListener('click', () => {
+  sound.unlock(); sound.setMuted(!sound.muted); renderMute();
+  document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
+});
+document.getElementById('fire-study-volume').addEventListener('input', event => {
+  volumeControl.value = event.target.value; volumeControl.dispatchEvent(new Event('input'));
+  document.getElementById('fire-study-mute').textContent = sound.muted ? '소리 켜기' : '소리 끄기';
+});
+
 // 불멍 시점 — 내 의자 뒤 어깨 너머로 모닥불을 봄
 const seatWorld = s => s.getWorldPosition(new THREE.Vector3());
 function fireFocusView() {
@@ -3309,7 +3391,7 @@ document.getElementById('btn-fire').addEventListener('click', () => {
   sound.unlock();
   if (fireWatching) { flyTo('normal'); toast('캠핑장을 둘러볼게요'); return; }
   flyToView(fireFocusView());
-  toast('장작 타는 모습을 편히 바라보세요 · 다시 누르면 돌아가요');
+  openPhotoFire();
 });
 
 let waveUntil = 0;
@@ -3338,7 +3420,7 @@ btnStars.addEventListener('click', () => {
 btnMorning.addEventListener('click', () => {
   sound.unlock();
   if (mode === 'morning') { setMode('evening'); toast('저녁으로 돌아왔어요'); }
-  else { setMode('morning'); nextBird = 0; toast('아침이 밝았어요 — 새소리가 들려요'); }
+  else { setMode('morning'); nextBird = 0; toast('아침 숲속 — 바람과 잎사귀 사이로 새가 울어요'); }
 });
 
 window.addEventListener('resize', () => {
@@ -3362,13 +3444,21 @@ renderer.setAnimationLoop(() => {
   fireLevel = Math.max(0.15, fireLevel - dt * 0.0012);
   const flicker = 0.88 + Math.sin(t * 5.1) * 0.055 + Math.sin(t * 11.7) * 0.035 + Math.sin(t * 2.3) * 0.04;
   naturalFire.update(t, fireLevel, camera);
+  crackleFlash = Math.max(0, crackleFlash - dt * 2.5);
+  if (t >= nextCrackleAt) {
+    const strength = 0.45 + fireLevel * 0.55;
+    emitFireCrackle(strength);
+    if (sound.ready) { sound.sizzle(strength); sound.crackle(strength * 0.5); }
+    nextCrackleAt = t + 0.7 + Math.random() * 2.1;
+  }
   coals.forEach((coal, i) => {
     coal.material.emissiveIntensity = (0.45 + fireLevel * 0.9) * (0.8 + Math.sin(t * 1.7 + i * 2.3) * 0.2);
   });
   fireLight.intensity = (6 + 34 * fireLevel) * flicker;
   for (const log of logs) {
     log.userData.burnAge += dt;
-    log.userData.burning.update(log.userData.burnAge, fireLevel, t);
+    log.userData.crackle = Math.max(0, (log.userData.crackle || 0) - dt * 3.5);
+    log.userData.burning.update(log.userData.burnAge, fireLevel, t, log.userData.crackle);
     if (log.userData.dropFrom > 0) {
       log.userData.dropFrom = Math.max(0, log.userData.dropFrom - dt * 3.5);
       log.position.y = 0.25 + log.userData.dropFrom;
@@ -3464,10 +3554,10 @@ renderer.setAnimationLoop(() => {
   if (sound.ready) {
     // (원본, 2026-10-30 송찬영 [AI]) sound.setBed(sound.fireBed, 0.05 + 0.2 * fireLevel);
     sound.setBed(sound.fireBed, 0.025 + 0.1 * fireLevel);   // 쉬— 깔림은 줄이고 타닥을 앞으로
-    sound.setBed(sound.windBed, mode === 'morning' ? 0.035 : 0.015);
+    sound.setBed(sound.windBed, mode === 'morning' ? 0.008 : 0.015);
+    sound.forest.update(mode === 'morning', t);
     // (원본, 2026-10-30 송찬영 [AI]) if (Math.random() < (2 + 14 * fireLevel) * dt) sound.pop(0.6 + fireLevel);
-    if (Math.random() < (2 + 9 * fireLevel) * dt) sound.crackle(0.6 + fireLevel);
-    if (Math.random() < (0.1 + 0.5 * fireLevel) * dt) sound.snap(0.6 + fireLevel * 0.6);
+    if (Math.random() < (0.07 + 0.13 * fireLevel) * dt) { sound.snap(0.4 + fireLevel * 0.45); emitFireCrackle(0.8); }
     sound.setBed(sound.insectBus, mode === 'night' ? 1 : 0);
     if (mode === 'night') sound.updateNight();
     if (mode === 'morning' && t >= nextBird) {
@@ -3476,11 +3566,12 @@ renderer.setAnimationLoop(() => {
       // (원본, 2026-10-30 송찬영 [AI]) nextBird = t + 0.8 + Math.random() * 2.8;
       sound.randomBird();
       if (Math.random() < 0.35) setTimeout(() => sound.ready && mode === 'morning' && sound.randomBird(), 400 + Math.random() * 900);
-      nextBird = t + 1.2 + Math.random() * 2.8;
+      nextBird = t + 2.8 + Math.random() * 5.5;
     }
   }
 
-  renderer.render(scene, camera);
+  if (realFireDialog.open && photoFireReady) photoFireView.render(t, crackleFlash);
+  else renderer.render(scene, camera);
 });
 </script>
 </body>
