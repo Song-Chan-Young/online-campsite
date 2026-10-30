@@ -751,7 +751,9 @@ let treeLeaves;
 {
   const inside = [[40, 32], [96, 50], [44, 78], [150, 28], [205, 55], [255, 35], [300, 62], [365, 60], [420, 40], [415, 88], [112, 266], [182, 278], [260, 262]]
     .map(([x, y]) => mw(x, y));
-  const outsideCount = 330, treeCount = outsideCount + inside.length;
+  // (원본, 2026-10-30 송찬영 [AI]) const outsideCount = 330, treeCount = outsideCount + inside.length;
+  const FRONT_N = 48;   // 텐트 입구 앞에 옮겨 심을 나무 — 처음엔 바깥 숲에 두었다가 데크·건물 자리가 정해진 뒤 옮김
+  const outsideCount = 330, treeCount = outsideCount + inside.length + FRONT_N;
   const trunkGeo = new THREE.CylinderGeometry(0.12, 0.2, 1.6, 6); trunkGeo.translate(0, 0.8, 0);
   const leafGeoA = new THREE.ConeGeometry(1.1, 2.6, 7); leafGeoA.translate(0, 2.5, 0);
   const leafGeoB = new THREE.ConeGeometry(0.8, 2.1, 7); leafGeoB.translate(0, 3.7, 0);
@@ -761,7 +763,7 @@ let treeLeaves;
   const leavesB = new THREE.InstancedMesh(leafGeoB, leafMat, treeCount);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
   for (let i = 0; i < treeCount; i++) {
-    if (i < outsideCount) {
+    if (i < outsideCount || i >= outsideCount + inside.length) {
       do {
         const a = rand() * Math.PI * 2, r = 30 + Math.pow(rand(), 1.3) * 80;
         p.set(MAP_C.x + Math.cos(a) * r, 0, MAP_C.z + Math.sin(a) * r);
@@ -793,6 +795,16 @@ let treeLeaves;
   }
   for (const cm of canopy) { cm.castShadow = true; cm.receiveShadow = true; cm.visible = false; scene.add(cm); }
   treeLeaves.c = canopy;
+  treeLeaves.front = { from: outsideCount + inside.length, n: FRONT_N };
+  treeLeaves.move = (i, pos) => {   // i 번째 나무를 pos 로 옮겨 심음 — 크기·방향·계절 색은 그대로
+    trunks.getMatrixAt(i, tm); tm.decompose(tp, tq, ts);
+    m.compose(pos, tq, ts); trunks.setMatrixAt(i, m); leavesA.setMatrixAt(i, m); leavesB.setMatrixAt(i, m);
+    pieces.forEach(([x, y, z, r], j) => {
+      off.set(x, y, z).multiply(ts).applyQuaternion(tq).add(pos);
+      canopy[j].setMatrixAt(i, m.compose(off, tq, s.set(r * ts.x, r * ts.y * 0.85, r * ts.z)));
+    });
+    for (const mesh of [trunks, leavesA, leavesB, ...canopy]) { mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); }
+  };
 }
 
 // ---------- 텐트 · 의자 · 랜턴 ----------
@@ -1190,6 +1202,28 @@ placeOnMap(makePergola({ w: 8.6, d: 7.6, sign: '바베큐장', grills: 2, tables
 placeOnMap(makeGate('방구석 캠핑장'), 140, 424, -0.48);
 placeOnMap(makeGate('입출구'), 46, 444, 0);
 placeOnMap(makeGate('입출구'), 364, 333, -0.48);
+
+// 아침 기상 숲 — 텐트 입구 앞 부채꼴로 나무를 옮겨 심어, 텐트에서 눈뜨면 나무만 보이게 (차박 서버2는 텐트 없음)
+const frontTrees = [];   // 캠핑 장비 자리를 고를 때 피함
+if (SERVER !== 2) {
+  const tp = campTent.group.position, door = campTent.group.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+  const head = Math.atan2(door.x, door.z);
+  const blocked = mapObjects.map(o => new THREE.Box3().setFromObject(o).expandByScalar(1.1));
+  const road = ROAD_B.clone().sub(ROAD_A), roadLen = road.length(); road.divideScalar(roadLen);
+  const onRoad = p => { const t = THREE.MathUtils.clamp((p.x - ROAD_A.x) * road.x + (p.z - ROAD_A.z) * road.z, 0, roadLen); return Math.hypot(p.x - ROAD_A.x - road.x * t, p.z - ROAD_A.z - road.z * t) < ROAD_W / 2 + 0.8; };
+  const mat = new THREE.Vector3(Math.sin(1.33), 0, Math.cos(1.33)).multiplyScalar(3.85);   // 누울 매트 데크 (MAT_ANGLE)
+  const { from, n } = treeLeaves.front;
+  for (let ring = 0; ring < 6 && frontTrees.length < n; ring++) {   // 가까운 줄부터 — 안쪽은 듬성, 바깥은 빽빽
+    const d = 7 + ring * 2, count = 6 + ring * 3;
+    for (let j = 0; j < count && frontTrees.length < n; j++) {
+      const a = head + (j / (count - 1) - 0.5) * 1.3 + (rand() - 0.5) * 0.1;
+      const p = new THREE.Vector3(tp.x + Math.sin(a) * (d + rand() * 0.8), 0, tp.z + Math.cos(a) * (d + rand() * 0.8));
+      if (Math.hypot(p.x, p.z) < 4.8 || p.distanceTo(mat) < 2.2 || waterDist(p.x, p.z) > -1.2 || onRoad(p)) continue;   // 모닥불·의자·매트·물가·길은 비움
+      if (blocked.some(b => p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z)) continue;      // 데크·차·건물
+      treeLeaves.move(from + frontTrees.length, p); frontTrees.push(p);
+    }
+  }
+}
 makePier();
 
 function makeChair() {
@@ -3288,6 +3322,7 @@ const gearProps = [];
 const GEAR_SLOTS = (() => {
   const busy = [[1.8, -2.4], [-0.6, 3.1], [-3.5, 2.9], [3.4, -2.2], [1.0, -3.7], [-1.6, -3.5]].map(([x, z]) => [campSpot(x, z), 1.7]);
   busy.push([campTent.group.position, 3.6], [MAT_DIR.clone().multiplyScalar(3.85), 2.4]);
+  for (const t of frontTrees) busy.push([t, 1.6]);   // 텐트 앞 숲
   const blocked = mapObjects.map(o => new THREE.Box3().setFromObject(o).expandByScalar(0.9));   // 데크·차·건물 바닥
   const road = ROAD_B.clone().sub(ROAD_A), roadLen = road.length(); road.divideScalar(roadLen);
   const roadDist = p => { const t = THREE.MathUtils.clamp((p.x - ROAD_A.x) * road.x + (p.z - ROAD_A.z) * road.z, 0, roadLen); return Math.hypot(p.x - ROAD_A.x - road.x * t, p.z - ROAD_A.z - road.z * t); };
