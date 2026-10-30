@@ -88,8 +88,8 @@ function broadcast(obj) {
   const s = JSON.stringify(obj);
   for (const c of wss.clients) if (c.readyState === c.OPEN) c.send(s);
 }
-// 서버(방) — 사용자에겐 서버2·3. 같은 방 사람끼리만 보이고 대화함 (서버1은 혼자라 접속 안 함)
-const ROOMS = new Set(['2', '3']);
+// 서버(방) — 서버1·2·3 모두 같은 방 사람끼리 보이고 대화함
+const ROOMS = new Set(['1', '2', '3']);
 function broadcastRoom(room, obj, except = null) {
   const s = JSON.stringify(obj);
   for (const c of wss.clients) if (c !== except && c.room === room && c.readyState === c.OPEN) c.send(s);

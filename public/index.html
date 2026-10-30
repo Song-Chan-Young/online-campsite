@@ -216,7 +216,7 @@
     <form id="enter-form" autocomplete="off">
       <input id="nick-input" maxlength="12" placeholder="닉네임 (12자까지)" aria-label="닉네임">
       <div class="server-pick" role="radiogroup" aria-label="서버">
-        <label><input type="radio" name="server" value="1"><b>서버1</b><small>내 공간 · 혼자</small></label>
+        <label><input type="radio" name="server" value="1"><b>서버1</b><small>내 공간 · 같이</small></label>
         <label><input type="radio" name="server" value="2"><b>서버2</b><small>차박 · 같이</small></label>
         <label><input type="radio" name="server" value="3"><b>서버3</b><small>데크 · 같이</small></label>
       </div>
@@ -433,9 +433,9 @@ const MAP_S = 0.16, MAP_PX = 460;
 const DECK_H = 0.15;   // 데크 높이
 // (원본, 2026-10-30 송찬영 [AI]) const mw = (px, py) => new THREE.Vector3((px - 372) * MAP_S - 4.3, 0, (py - 268) * MAP_S - 3.2);
 // 서버(사용자에겐 서버1·2·3, 실제로는 한 서버의 방) — 내 캠프는 늘 원점이고, 지도를 옮겨 고른 자리가 원점에 오게 함
-//   1: 내 공간 — A구역 데크1, 혼자(접속 안 함) · 2: 차박 — 차 옆, 같이 · 3: 데크 — B구역 데크3, 같이
+//   1: 내 공간 — A구역 데크1, 같이 · 2: 차박 — 차 옆, 같이 · 3: 데크 — B구역 데크3, 같이
 const SERVERS = {
-  1: { name: '서버1 · 내 공간', anchor: [372, 268], solo: true },
+  1: { name: '서버1 · 내 공간', anchor: [372, 268] },
   2: { name: '서버2 · 차박', anchor: [388, 161] },
   3: { name: '서버3 · 데크', anchor: [55, 207] },
 };
@@ -2083,8 +2083,7 @@ function connectChat() {
 }
 // (원본, 2026-10-30 송찬영 [AI]) if (location.protocol.startsWith('http')) connectChat();
 // (원본, 2026-10-30 송찬영 [AI]) else chatInput.placeholder = '서버(serve.cmd)로 열면 대화할 수 있어요';
-if (SERVERS[SERVER].solo) chatInput.placeholder = '서버1은 나만의 공간이에요 — 같이 놀려면 서버2·3';   // 혼자 — 접속 안 함
-else if (location.protocol.startsWith('http')) connectChat();
+if (location.protocol.startsWith('http')) connectChat();
 else chatInput.placeholder = '서버(serve.cmd)로 열면 대화할 수 있어요';
 
 // ---------- 다른 사람 — 같은 서버(방) 사람의 아바타 · 이름표 · 움직임 · 인사 ----------
@@ -3008,7 +3007,7 @@ let waveUntil = 0;
 document.getElementById('btn-hello').addEventListener('click', () => {
   sound.unlock();
   const r = nearestRemote(6);   // 6 안의 가장 가까운 사람
-  if (!r) { toast(SERVERS[SERVER].solo ? '서버1은 나만의 공간이라 인사할 사람이 없어요' : '근처에 인사할 사람이 없어요'); return; }
+  if (!r) { toast('근처에 인사할 사람이 없어요'); return; }
   waveAt(r);
   sendAct({ act: 'hello', to: r.id });
   toast(`${r.name}님에게 인사했어요 👋`);
