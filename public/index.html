@@ -314,7 +314,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { createCampfireFlames, createEmberTexture } from './camp-fire.mjs';
+import { createCampfireFlames, createEmberTexture, createBurningWood } from './camp-fire.mjs';
 import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
 import { inviteAddress, burnPrivateWorry, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
 
@@ -1321,6 +1321,7 @@ let swimK = 0;               // 0 = 땅, 1 = 바다에서 수영
 let afterArrive = null;      // 도착하면 할 일 (함수)
 let lieSpot = 'mat';         // 누운 자리 — 'mat' | 'hammock'
 const HAMMOCK_LIFT = 0.23;   // 해먹 그물 높이만큼 더 올림
+let fireWatching = false;
 let camHold = false;         // 망원경 볼 때 카메라 따라가기 멈춤
 // (원본, 2026-10-30 송찬영 [AI]) const LIE_LIFT = 0.3;        // 누우면 등 두께만큼 몸을 올림
 const MAT_DECK_H = 0.12;     // 매트 밑 나무 데크 높이
@@ -1508,10 +1509,12 @@ scene.add(fire);
     fire.add(st);
   }
 }
-const logMat = new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: 1, emissive: 0x401000, emissiveIntensity: 0.4 });
 const logs = [];
 function addLog(dropIn = false) {
-  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.0, 7), logMat);
+  const burning = createBurningWood(THREE, rand() * 20);
+  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.12, 1.0, 12), burning.material);
+  log.userData.burning = burning;
+  log.userData.burnAge = dropIn ? 0 : 20 + logs.length * 14;
   const a = rand() * Math.PI;
   log.rotation.set(Math.PI / 2 - 0.35, a, 0, 'YXZ');
   log.position.set((rand() - 0.5) * 0.15, 0.22 + logs.length * 0.015, (rand() - 0.5) * 0.15);
@@ -1519,7 +1522,9 @@ function addLog(dropIn = false) {
   log.userData.dropFrom = dropIn ? 1.2 : 0;
   fire.add(log);
   logs.push(log);
-  if (logs.length > 7) fire.remove(logs.shift());
+  if (logs.length > 7) {
+    const old = logs.shift(); fire.remove(old); old.geometry.dispose(); old.material.dispose();
+  }
 }
 for (let i = 0; i < 4; i++) addLog();
 
@@ -2109,6 +2114,8 @@ let camTween = null;
 // (원본, 2026-10-30 송찬영 [AI])   const v = VIEWS[view];
 function flyTo(view) { flyToView(VIEWS[view]); }
 function flyToView(v) {   // { pos, target, maxPolar } 로 날아감
+  fireWatching = v.closeFire === true;
+  controls.minDistance = fireWatching ? 1.35 : 3;
   // 올려다볼 땐 회전 제한을 먼저 풀고, 내려올 땐 도착한 뒤 다시 건다
   if (v.maxPolar > controls.maxPolarAngle) controls.maxPolarAngle = v.maxPolar;
   camTween = { t: 0, dur: 2.4, fromPos: camera.position.clone(), fromTarget: controls.target.clone(), toPos: v.pos, toTarget: v.target, maxPolar: v.maxPolar };
@@ -2881,6 +2888,7 @@ function holdItem(id, dur) {
   held = { id, until: clock.elapsedTime + dur, prop };
 }
 function stopActivity() {   // 자리를 뜨면 멈추는 것들
+  if (fireWatching) flyTo('normal');
   if (held && (held.id === 'guitar' || held.id === 'rod')) stopHeld();
   // (원본, 2026-10-30 송찬영 [AI]) if (camHold) { camHold = false; controls.maxPolarAngle = mode === 'night' ? Math.PI * 0.85 : Math.PI * 0.495; }
   // 망원경 시점(하늘 30 위를 봄)에서 그대로 따라가면 카메라가 땅 밑으로 내려감 → 내 뒤 보통 시점으로 날아 돌아옴
@@ -3290,22 +3298,18 @@ function applySeason(key, announce = false) {
 // 불멍 시점 — 내 의자 뒤 어깨 너머로 모닥불을 봄
 const seatWorld = s => s.getWorldPosition(new THREE.Vector3());
 function fireFocusView() {
-  const s = seatWorld(seats[0]), f = campCenter();
-  const dir = s.clone().sub(f).setY(0).normalize();
-  // (원본, 2026-10-30 송찬영 [AI]) return { pos: s.clone().addScaledVector(dir, 1.5).setY(1.75), target: FIRE_VIEW_TARGET.clone(), maxPolar: Math.PI * 0.495 };
-  // 바로 뒤면 머리가 불을 가림 → 옆으로 비켜 어깨 너머, 조금 위에서
-  const side = new THREE.Vector3(-dir.z, 0, dir.x);
-  return { pos: s.clone().addScaledVector(dir, 1.6).addScaledVector(side, 1.3).setY(2.4), target: FIRE_VIEW_TARGET.clone(), maxPolar: Math.PI * 0.495 };
+  const f = campCenter();
+  const dir = camera.position.clone().sub(f).setY(0);
+  if (dir.lengthSq() < 0.01) dir.set(0, 0, 1);
+  dir.normalize();
+  return {pos: f.clone().addScaledVector(dir, 1.95).add(new THREE.Vector3(0, 1.05, 0)),
+    target: f.clone().add(new THREE.Vector3(0, 0.48, 0)), maxPolar: Math.PI * 0.495, closeFire: true};
 }
 document.getElementById('btn-fire').addEventListener('click', () => {
   sound.unlock();
-  // 불멍 — 자리에 앉고, 모닥불에 포커스
-  if (pose !== 'sit' || walkTo) startWalk(seatWorld(seats[0]), seats[0]);
+  if (fireWatching) { flyTo('normal'); toast('캠핑장을 둘러볼게요'); return; }
   flyToView(fireFocusView());
-  fireLevel = Math.min(1, fireLevel + 0.35);
-  addLog(true);
-  if (sound.ready) sound.whoosh();
-  toast('장작을 하나 넣었어요');
+  toast('장작 타는 모습을 편히 바라보세요 · 다시 누르면 돌아가요');
 });
 
 let waveUntil = 0;
@@ -3355,7 +3359,7 @@ renderer.setAnimationLoop(() => {
   controls.update();
 
   // 불
-  fireLevel = Math.max(0.15, fireLevel - dt * 0.012);
+  fireLevel = Math.max(0.15, fireLevel - dt * 0.0012);
   const flicker = 0.88 + Math.sin(t * 5.1) * 0.055 + Math.sin(t * 11.7) * 0.035 + Math.sin(t * 2.3) * 0.04;
   naturalFire.update(t, fireLevel, camera);
   coals.forEach((coal, i) => {
@@ -3363,12 +3367,13 @@ renderer.setAnimationLoop(() => {
   });
   fireLight.intensity = (6 + 34 * fireLevel) * flicker;
   for (const log of logs) {
+    log.userData.burnAge += dt;
+    log.userData.burning.update(log.userData.burnAge, fireLevel, t);
     if (log.userData.dropFrom > 0) {
       log.userData.dropFrom = Math.max(0, log.userData.dropFrom - dt * 3.5);
       log.position.y = 0.25 + log.userData.dropFrom;
     }
   }
-  logMat.emissiveIntensity = 0.3 + fireLevel * 0.9 * flicker;
   const sparkTop = 1.2 + fireLevel * 1.6;
   for (let i = 0; i < sparkCount; i++) {
     sparkPos[i * 3 + 1] += sparkVel[i] * dt * (0.6 + fireLevel);
@@ -3409,7 +3414,7 @@ renderer.setAnimationLoop(() => {
 
   // 카메라 따라가기 — 앉아 있으면 모닥불, 서 있거나 걸으면 나를 중심으로
   // (원본, 2026-10-30 송찬영 [AI]) if (!camTween && mode !== 'night') {
-  if (!camTween && mode !== 'night' && !camHold) {
+  if (!camTween && mode !== 'night' && !camHold && !fireWatching) {
     const want = pose === 'sit' ? FIRE_VIEW_TARGET : followTarget.set(me.position.x, 1, me.position.z);
     const step = followStep.subVectors(want, controls.target).multiplyScalar(1 - Math.exp(-dt * 2.5));
     controls.target.add(step);

@@ -90,3 +90,44 @@ export function createEmberTexture(THREE) {
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, 32, 32);
   return new THREE.CanvasTexture(canvas);
 }
+
+// Wood darkens gradually; fissures glow while the surface turns to charcoal.
+export function createBurningWood(THREE, seed = 0) {
+  const uniforms = {uBurn: {value: 0}, uWoodHeat: {value: 0}, uWoodSeed: {value: seed}};
+  const material = new THREE.MeshStandardMaterial({color: 0x68442b, roughness: 1});
+  material.onBeforeCompile = shader => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = 'varying vec2 vWoodUv;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\nvWoodUv = uv;');
+    shader.fragmentShader = `varying vec2 vWoodUv;
+      uniform float uBurn;
+      uniform float uWoodHeat;
+      uniform float uWoodSeed;
+      float woodHash(vec2 p) {return fract(sin(dot(p,vec2(127.1,311.7)) + uWoodSeed) * 43758.5453);}
+    ` + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `
+      #include <color_fragment>
+      vec2 grainUv = vWoodUv * vec2(28.0, 5.0);
+      float grain = woodHash(floor(grainUv));
+      float grooves = abs(sin(vWoodUv.x * 96.0 + sin(vWoodUv.y * 22.0 + uWoodSeed) * 0.9));
+      float crossCrack = abs(sin(vWoodUv.y * 41.0 + sin(vWoodUv.x * 23.0) * 0.6));
+      float fissure = 1.0 - smoothstep(0.025, 0.15, min(grooves, crossCrack));
+      float charred = smoothstep(0.02, 0.64, uBurn);
+      vec3 bark = diffuseColor.rgb * (0.55 + grain * 0.45) * (0.7 + grooves * 0.3);
+      vec3 charcoal = vec3(0.023, 0.014, 0.011) * (0.6 + grain * 0.9);
+      vec3 ash = vec3(0.17, 0.15, 0.13) * (0.65 + grain * 0.6);
+      diffuseColor.rgb = mix(mix(bark, charcoal, charred), ash, smoothstep(0.76, 1.0, uBurn));
+    `);
+    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `
+      #include <emissivemap_fragment>
+      totalEmissiveRadiance += vec3(1.6, 0.16, 0.012) * fissure * uWoodHeat;
+    `);
+  };
+  return {material, update(age, strength, time) {
+    uniforms.uBurn.value = Math.min(1, age / 240);
+    const ignition = Math.min(1, age / 8);
+    const remaining = Math.max(0, 1 - Math.max(0, age - 150) / 100);
+    uniforms.uWoodHeat.value = ignition * remaining * (0.55 + strength * 0.7)
+      * (0.86 + Math.sin(time * 1.8 + seed) * 0.14);
+  }};
+}
