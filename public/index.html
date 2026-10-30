@@ -57,6 +57,7 @@
   #enter-screen { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(10, 14, 10, 0.55);
     backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); transition: opacity .6s; z-index: 10; }
   #enter-screen.hide { opacity: 0; pointer-events: none; }
+  #enter-cancel { appearance: none; border: 0; background: transparent; color: var(--text-dim); font: inherit; font-size: 14px; cursor: pointer; padding: 6px 12px; }
   .enter-card { text-align: center; padding: 32px 36px; border-radius: 24px; max-width: calc(100vw - 32px); }
   .enter-card h1 { margin: 0 0 8px; font-size: 26px; }
   .enter-card p { margin: 0 0 22px; color: var(--text-dim); line-height: 1.6; }
@@ -223,9 +224,9 @@
   }
   @media (pointer:coarse) and (max-width:430px) {
     .top {top:max(6px,env(safe-area-inset-top));left:6px;right:6px;}
-    .title {display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:3px;padding:5px 8px;border-radius:18px;}
+    .title {display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:3px;padding:5px 8px;border-radius:18px;}
     .title b {font-size:14px;}
-    .title #nick-btn {display:none;}
+    .title #nick-btn {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .title button {max-width:none;min-height:38px;padding:0 7px;font-size:12px;}
     #season-btn,#server-btn {border-left:1px solid var(--line);margin:0;}
     .top-right {gap:5px;}
@@ -362,7 +363,7 @@
 
 <div class="hint" id="control-hint">바닥 클릭으로 걷기 · 의자 클릭으로 앉기 · 드래그로 둘러보기 · 휠로 확대/축소</div>
 
-<div id="enter-screen">
+<div id="enter-screen" class="hide">
   <div class="enter-card pill">
     <h1>방구석 캠핑장</h1>
     <p>혼자여도 좋고, 같이여도 좋은 밤<br>모닥불 앞에서 잠깐 쉬어가세요</p>
@@ -376,6 +377,7 @@
         <label><input type="radio" name="server" value="3"><b>서버3</b><small>데크 · 같이</small></label>
       </div>
       <button id="enter" type="submit">들어가기</button>
+      <button id="enter-cancel" type="button">취소</button>
     </form>
   </div>
 </div>
@@ -2640,7 +2642,10 @@ function setMode(next) {
 // });
 
 // ---------- 닉네임 — 들어갈 때 정하고, 왼쪽 위 이름을 눌러 바꿈. 머리 위에 작게 ----------
-let wantNick = (() => { try { return localStorage.getItem('camp-nick') || randomNickname(); } catch { return randomNickname(); } })();
+let wantNick = (() => {   // 처음 오면 별명을 자동으로 정해 저장 — 다음에 와도 같은 별명
+  try { let n = localStorage.getItem('camp-nick'); if (!n) { n = randomNickname(); localStorage.setItem('camp-nick', n); } return n; }
+  catch { return randomNickname(); }
+})();
 let entered = false;
 const enterScreen = document.getElementById('enter-screen');
 const nickInput = document.getElementById('nick-input');
@@ -2669,7 +2674,7 @@ let myTag = makeNameTag(shownName());
 scene.add(myTag);
 function updateNick() {
   const n = shownName();
-  nickBtn.textContent = n;
+  nickBtn.textContent = `${n} ✎`;   // 누르면 별명 수정
   chatInput.placeholder = chatInput.disabled ? chatInput.placeholder : `나는 「${n}」 — 말 걸기`;
   scene.remove(myTag); myTag.material.map.dispose(); myTag.material.dispose();
   myTag = makeNameTag(remoteLabel(n, quietMode)); scene.add(myTag);
@@ -2706,20 +2711,28 @@ function finishEntry() {
   if (!chatWs && location.protocol.startsWith('http')) connectChat();
   reportEntry();
 }
+/* (원본, 2026-10-30 송찬영 [AI]) 입장 화면에서 「들어가기」를 눌러야 들어감 — 바로 들어가게 교체
 const pendingEntry = consumeEntry(location.href);
 if (pendingEntry.enter) {
   history.replaceState(null, '', pendingEntry.url);
   finishEntry();
 }
+*/
+// 들어가자마자 바로 캠핑장 — 별명은 자동, 서버는 기본 서버1. 왼쪽 위 ✎ 버튼으로만 바꿈
+const pendingEntry = consumeEntry(location.href);
+if (pendingEntry.enter) history.replaceState(null, '', pendingEntry.url);
+finishEntry();
+for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => sound.unlock(), { once: true });   // 소리는 첫 터치에 켜짐
 // 서버 고르기 — 처음 화면에 지금 서버 표시, 왼쪽 위 「서버N」을 누르면 다시 고름
 document.querySelector(`input[name=server][value="${SERVER}"]`).checked = true;
 const serverBtn = document.getElementById('server-btn');
-serverBtn.textContent = SERVERS[SERVER].name;
+serverBtn.textContent = `${SERVERS[SERVER].name} ✎`;
 serverBtn.addEventListener('click', () => {
   nickInput.value = shownName() === '나' ? '' : shownName();
   document.getElementById('enter').textContent = '들어가기';
   enterScreen.classList.remove('hide');
 });
+document.getElementById('enter-cancel').addEventListener('click', () => enterScreen.classList.add('hide'));
 nickBtn.addEventListener('click', () => {   // 닉네임 바꾸기 — 같은 창을 다시 띄움
   nickInput.value = shownName() === '나' ? '' : shownName();
   document.getElementById('enter').textContent = '바꾸기';

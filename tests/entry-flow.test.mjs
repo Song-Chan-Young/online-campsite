@@ -16,7 +16,7 @@ function entryPage(address, room, storage) {
     SERVER:room, SERVERS:{1:{name:'서버1'},3:{name:'서버3'}}, location,
     history:{replaceState(state, title, url) {location.href=url;}},
     localStorage:{getItem:key=>storage.get(key), setItem:(key,value)=>storage.set(key,value)},
-    matchMedia:()=>({matches:false}), sound:{unlock(){}}, updateNick(){}, sendNick(){}, toast(){}, reportEntry(){},
+    matchMedia:()=>({matches:false}), sound:{unlock(){}}, window:{addEventListener(){}}, updateNick(){}, sendNick(){}, toast(){}, reportEntry(){},
     myName:'', chatWs:null, connectChat(){connections++;context.chatWs={};}, entryRedirect, consumeEntry, randomNickname,
   });
   vm.runInContext(source.slice(source.indexOf('let wantNick ='), source.indexOf('const shownName =')), context);
@@ -43,9 +43,12 @@ test('saved names are reused and a same-room entry needs no reload', () => {
   assert.equal(page.location.href, 'https://camp.example/?server=3');
 });
 
-test('entry opens one connection and repeated submissions never reserve a second seat', () => {
-  const page=entryPage('https://camp.example/?server=3',3,new Map());
-  assert.equal(page.connections(),0);
+test('visitors enter immediately with one connection and later edits never reserve a second seat', () => {
+  const storage=new Map();
+  const page=entryPage('https://camp.example/?server=3',3,storage);
+  assert.equal(page.screen.hidden,true);
+  assert.equal(page.connections(),1);
+  assert.ok(storage.get('camp-nick'));
   page.submit();page.submit();
   assert.equal(page.connections(),1);
 });
