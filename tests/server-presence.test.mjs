@@ -41,7 +41,7 @@ test('a taken mat is rejected; a new claim succeeds once its owner leaves', () =
 });
 test('a full camp enters standing instead of overlapping a seated camper', () => {
   const server = roomServer();
-  for (let i = 0; i < 4; i++) server.join('1');
+  for (let i = 0; i < 8; i++) server.join('1');
   const last = server.join('1');
   assert.equal(last.messages[0].spot, null);
 });

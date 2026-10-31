@@ -16,6 +16,15 @@ function camp() {
   return {hub,join,send,open,place,advance:ms=>{now+=ms;}};
 }
 
+test('automatic greeting replies from older tabs are dropped while manual greetings pass',()=>{
+  const {join,send,open}=camp();const a=join(),b=join();open(a);open(b);
+  send(a,{type:'act',act:'hello',to:b.id,reply:true});
+  assert.equal(b.messages.filter(m=>m.type==='act').length,0);
+  send(a,{type:'act',act:'hello',to:b.id});
+  assert.equal(b.messages.filter(m=>m.type==='act').length,1);
+  assert.equal(b.messages.at(-1).id,a.id);
+});
+
 test('quiet visitors receive presence but no chat, greetings or gifts', () => {
   const {join,send,open,place} = camp();
   const a=join(), b=join(); open(a); place(a); place(b);
@@ -59,7 +68,7 @@ test('an absent inviter or a full camp falls back without stealing any chair',()
   const {join}=camp();
   const first=join('1',{near:'gone-token'});
   assert.equal(first.messages[0].invite,'missing');
-  for(let i=0;i<3;i++) join();
+  for(let i=0;i<7;i++) join();
   const last=join('1',{near:'gone-token'});
   assert.equal(last.spot,null);
 });

@@ -7,6 +7,21 @@
 <meta name="description" content="모닥불 앞에서 잠깐 쉬어가세요. 혼자 불멍하거나 친구를 옆자리로 초대하는 작은 온라인 캠핑장.">
 <meta property="og:title" content="방구석 캠핑장">
 <meta property="og:description" content="캠핑 갈 기운도 없는 날, 여기 잠깐 앉았다 가세요.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="방구석 캠핑장">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://bangguseok-camp.bangguseok-camp.workers.dev/">
+<meta property="og:image" content="https://bangguseok-camp.bangguseok-camp.workers.dev/assets/og-camp-real-v2.jpg">
+<meta property="og:image:secure_url" content="https://bangguseok-camp.bangguseok-camp.workers.dev/assets/og-camp-real-v2.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="실제 방구석 캠핑장 화면 — 모닥불과 캠핑 의자에서 함께 쉬는 사람들">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="방구석 캠핑장">
+<meta name="twitter:description" content="혼자여도 좋고, 같이여도 좋은 밤. 모닥불 앞에서 잠깐 쉬어가세요.">
+<meta name="twitter:image" content="https://bangguseok-camp.bangguseok-camp.workers.dev/assets/og-camp-real-v2.jpg">
+<meta name="twitter:image:alt" content="실제 방구석 캠핑장 화면 — 모닥불과 캠핑 의자에서 함께 쉬는 사람들">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%94%A5%3C/text%3E%3C/svg%3E">
 <style>
   :root {
@@ -27,7 +42,7 @@
   .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
-  .top { position: fixed; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between;
+  .top { position: fixed; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between;z-index:4;
     align-items: center; pointer-events: none; }
   .top > * { pointer-events: auto; }
   .title { display: flex; align-items: center; gap: 10px; padding: 10px 18px; }
@@ -39,7 +54,7 @@
   .icon-btn:hover { background: var(--panel-hover); }
   .icon-btn svg { width: 22px; height: 22px; }
 
-  .dock { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  .dock { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);z-index:3;
     display: flex; gap: 4px; padding: 8px; border-radius: 28px; max-width: calc(100vw - 32px); }
   .dock button { appearance: none; border: 0; background: transparent; color: var(--text); cursor: pointer;
     min-width: 84px; padding: 10px 12px 8px; border-radius: 20px; display: flex; flex-direction: column;
@@ -51,6 +66,10 @@
   .toast { position: fixed; top: 84px; left: 50%; transform: translate(-50%, -8px); padding: 10px 20px;
     font-size: 15px; opacity: 0; transition: opacity .35s, transform .35s; pointer-events: none; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #speech-bubbles {position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1;}
+  .speech-bubble {position:absolute;transform:translate(-50%,-100%);max-width:min(240px,calc(100vw - 32px));padding:9px 13px;border-radius:16px;background:rgba(255,249,232,.97);color:#253026;font-size:14px;line-height:1.45;box-shadow:0 3px 16px rgba(0,0,0,.22);overflow-wrap:anywhere;white-space:pre-wrap;}
+  .speech-bubble::after {content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid rgba(255,249,232,.97);}
+  #toast {z-index:5;max-width:calc(100vw - 24px);width:max-content;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.5;}
 
   .hint { position: fixed; left: 16px; bottom: 16px; font-size: 12px; color: var(--text-dim); opacity: .8; }
 
@@ -109,6 +128,14 @@
   #server-btn { appearance: none; border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--text-dim);
     font: inherit; font-size: 14px; padding: 0 0 0 10px; cursor: pointer; }
   #server-btn:hover { color: var(--text); }
+  #server-count { display:block; color:var(--text); font-size:11px; line-height:1.5; white-space:nowrap; }
+  .cook-entry {display:block;width:100%;min-height:44px;margin:12px 0;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.15);color:var(--text);font:inherit;cursor:pointer;}
+  .cook-card {padding:14px 0;border-bottom:1px solid var(--line);text-align:left;}
+  .cook-card h3 {font-size:16px;margin:0 0 6px;}
+  .cook-card p {font-size:13px;margin:6px 0;color:var(--text-dim);}
+  .cook-card progress {width:100%;height:12px;accent-color:var(--accent);}
+  .cook-card button {margin:5px 4px 0 0;min-height:42px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel-active);color:var(--text);font:inherit;font-size:13px;cursor:pointer;}
+  .cook-card button:disabled {opacity:.45;cursor:default;}
   .server-pick { display: flex; gap: 6px; }
   .server-pick label { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 10px; cursor: pointer;
     border: 1px solid var(--line); border-radius: 14px; font-size: 14px; }
@@ -120,7 +147,7 @@
   #enter { appearance: none; border: 0; cursor: pointer; font: inherit; font-size: 16px; color: #2a1606;
     background: var(--accent); padding: 12px 34px; border-radius: 999px; }
 
-  .chat { position: fixed; right: 16px; bottom: 16px; width: 300px; border-radius: 20px; padding: 8px;
+  .chat { position: fixed; right: 16px; bottom: 16px; width: 300px; border-radius: 20px; padding: 8px;z-index:3;
     display: flex; flex-direction: column; gap: 6px; }
   .chat-log { list-style: none; margin: 0; padding: 4px 6px; max-height: 180px; overflow-y: auto; font-size: 13px; line-height: 1.45; }
   .chat-log:empty { display: none; }
@@ -134,6 +161,11 @@
   .chat-form button { appearance: none; border: 0; border-radius: 999px; padding: 0 14px; font: inherit; font-size: 13px;
     background: var(--accent); color: #2a1606; cursor: pointer; }
   .chat-form button:disabled, .chat-form input:disabled { opacity: 0.5; cursor: default; }
+  .quick-chat {display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:132px;overflow-y:auto;overscroll-behavior:contain;padding:3px 1px;}
+  .quick-chat button {min-height:38px;border:1px solid var(--line);border-radius:12px;padding:7px 8px;background:rgba(0,0,0,.16);color:var(--text);font:inherit;font-size:12px;line-height:1.4;text-align:left;cursor:pointer;touch-action:manipulation;}
+  .quick-chat button:hover {background:var(--panel-active);}
+  .quick-chat button:disabled {opacity:.45;cursor:default;}
+  @media(pointer:coarse),(max-width:700px) {.quick-chat button {min-height:42px;font-size:13px;}}
   @media (max-width: 1100px) {
     .chat { left: 16px; right: 16px; width: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 92px); }
     .chat-log { max-height: 22vh; }
@@ -148,7 +180,7 @@
   @media (pointer: coarse) {
     button, input, label { touch-action: manipulation; }
     #nick-input, .chat-form input { font-size: 16px; }
-    .hint { display: block; pointer-events: none; top: 126px; bottom: auto; left: 8px; right: 8px;
+    .hint { display: block; pointer-events: none; top: 166px; bottom: auto; left: 8px; right: 8px;
       text-align: center; font-size: 11px; text-shadow: 0 1px 3px #000; }
     .top { top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; flex-wrap: wrap; gap: 6px; }
     .title { width: 100%; min-width: 0; box-sizing: border-box; padding: 6px 10px; gap: 6px; }
@@ -168,6 +200,13 @@
   .camp-tools {position:fixed;left:16px;top:90px;display:grid;gap:6px;padding:10px;width:174px;z-index:2;}
   .camp-tools button {min-height:44px;border:1px solid var(--line);border-radius:14px;padding:8px 10px;background:rgba(0,0,0,.15);color:var(--text);font:inherit;font-size:13px;text-align:left;cursor:pointer;touch-action:manipulation;}
   .camp-tools button:hover {background:var(--panel-hover);}
+  .camp-tools button:not(.fold) {display:flex;align-items:center;gap:8px;}
+  .camp-tools button svg {width:22px;height:22px;flex:0 0 22px;}
+  #camp-tools {width:min(290px,calc(100vw - 16px));grid-template-columns:repeat(3,minmax(0,1fr));}
+  #camp-tools.folded > #add-log,#camp-tools.folded > #go-store,#camp-tools.folded > #change-season {display:flex!important;}
+  #camp-tools #camp-connection {grid-column:1 / -1;}
+  #camp-tools > button:not(.fold) {min-width:0;min-height:68px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 5px;font-size:13px;line-height:1.3;text-align:center;}
+  #camp-tools > button:not(.fold) svg {width:24px;height:24px;flex:0 0 24px;}
   .camp-tools button:disabled {opacity:.5;cursor:wait;}
   .volume-control {display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);grid-column:1 / -1;}
   .volume-control input {min-width:0;flex:1;accent-color:var(--accent);min-height:24px;}
@@ -195,6 +234,8 @@
   .fold {appearance:none;border:1px solid var(--line);border-radius:999px;background:rgba(0,0,0,.2);color:var(--text-dim);font:inherit;font-size:12px;padding:4px 10px;cursor:pointer;touch-action:manipulation;}
   .camp-tools > .fold, .chat > .fold {grid-column:1 / -1;justify-self:end;align-self:flex-end;min-height:30px;}
   .camp-tools.folded, .chat.folded {width:auto;padding:5px;}
+  #chat.folded {left:auto;right:8px;width:min(340px,calc(100vw - 16px));}
+  #chat.folded > .fold {width:100%;max-width:100%;text-align:left;}
   .camp-tools.folded > :not(.fold), .chat.folded > :not(.fold) {display:none !important;}
   .camp-tools.folded > .fold, .chat.folded > .fold {color:var(--text);min-height:40px;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .panel > .fold {position:absolute;top:14px;right:14px;}
@@ -224,7 +265,7 @@
   }
   @media (pointer:coarse) and (max-width:430px) {
     .top {top:max(6px,env(safe-area-inset-top));left:6px;right:6px;}
-    .title {display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:3px;padding:5px 8px;border-radius:18px;}
+    .title {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:3px;padding:5px 8px;border-radius:18px;}
     .title b {font-size:14px;}
     .title #nick-btn {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .title button {max-width:none;min-height:38px;padding:0 7px;font-size:12px;}
@@ -244,6 +285,40 @@
     #shop-panel .shop-scroll {min-height:80px;}
     .camp-tools.folded,.chat.folded {bottom:calc(max(6px,env(safe-area-inset-bottom)) + 58px);}
   }
+  @media (pointer:coarse),(max-width:700px) {
+    #chat.folded {left:auto;right:8px;width:calc(50vw - 12px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + 62px);padding:4px;border-radius:16px;z-index:3;background:rgba(24,32,26,.9);}
+    #chat.folded > .fold {width:100%;max-width:none;min-height:40px;max-height:56px;padding:6px 10px;font-size:14px;line-height:1.4;text-align:left;align-self:stretch;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;}
+  }
+  #chat:not(.folded) {left:auto;right:8px;width:min(340px,calc(100vw - 16px));}
+  #chat .quick-chat {max-height:106px;}
+  @media(pointer:coarse),(max-width:430px) {
+    #camp-tools > button:not(.fold) {min-height:58px;font-size:12px;}
+    #camp-tools > button:not(.fold) svg {width:22px;height:22px;flex-basis:22px;}
+  }
+  @media(pointer:coarse),(max-width:700px) {
+    #camp-tools {left:8px;right:auto;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 116px);}
+  }
+
+  #volume-menu {position:relative;}
+  #volume-menu summary {list-style:none;cursor:pointer;}
+  #volume-menu summary::-webkit-details-marker {display:none;}
+  .volume-popover {position:absolute;right:0;top:calc(100% + 8px);width:210px;padding:14px;border-radius:18px;background:rgba(24,32,26,.97);}
+  #camp-connection {display:none;}
+
+  #camp-tools {width:56px;grid-template-columns:1fr;padding:5px;gap:4px;border-radius:20px;}
+  #camp-tools > button:not(.fold) {min-height:40px;gap:3px;padding:5px 2px;font-size:9px;border-radius:12px;white-space:nowrap;}
+  #camp-tools > button:not(.fold) svg {width:16px;height:16px;flex:0 0 16px;}
+
+  #chat.folded {display:none;}
+  .dock button {min-width:0;flex:1;}
+  #btn-chat[aria-expanded="true"] {background:var(--panel-active);}
+
+  @media(pointer:coarse),(max-width:700px) {
+    #camp-tools {top:calc(max(8px,env(safe-area-inset-top)) + 110px);bottom:auto;}
+  }
+
+  .dock {width:min(480px,calc(100vw - 16px));}
+  .dock button {white-space:nowrap;}
 </style>
 <!-- (원본, 2026-10-30 송찬영 [AI]) CDN — 서버(server.mjs)가 node_modules/three 를 /vendor/three/ 로 직접 줌
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -258,15 +333,17 @@
 </head>
 <body>
 <div id="app"></div>
+<div id="speech-bubbles" aria-hidden="true"></div>
 
 <div class="top">
   <!-- (원본, 2026-10-30 송찬영 [AI]) <div class="title pill"><b>방구석 캠핑장</b><span>사이트 1</span></div> -->
-  <div class="title pill"><b>방구석 캠핑장</b><button id="nick-btn" type="button" title="닉네임 바꾸기">나</button><button id="season-btn" type="button" title="계절 고르기">🍁 가을</button><button id="server-btn" type="button" title="서버 바꾸기">서버1</button></div>
+  <div class="title pill"><b>방구석 캠핑장</b><button id="nick-btn" type="button" title="닉네임 바꾸기">나</button><button id="season-btn" type="button" title="계절 고르기" hidden>🍁 가을</button><button id="server-btn" type="button" title="서버 바꾸기">서버1</button></div>
   <!-- (원본, 2026-10-30 송찬영 [AI]) <button id="mute" ...> 단독 -->
   <div class="top-right">
     <button id="bag-btn" class="icon-btn pill" aria-label="가방" title="가방">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5h12l-.8 11H6.8z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg>
     </button>
+    <details id="volume-menu"><summary class="icon-btn pill" aria-label="음량 조절" title="음량 조절"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--panel)"/><circle cx="15" cy="12" r="2" fill="var(--panel)"/><circle cx="9" cy="18" r="2" fill="var(--panel)"/></svg></summary><div class="volume-popover pill"><label class="volume-control">소리 <input id="volume-control" type="range" min="0" max="100" value="65" aria-label="캠핑장 소리 크기"></label></div></details>
     <button id="shot" class="icon-btn pill" aria-label="사진 찍기" title="사진 찍기">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h3l1.5-2.5h7L17 8.5h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
     </button>
@@ -275,13 +352,30 @@
 </div>
 
 <div class="toast pill" id="toast" role="status" aria-live="polite"></div>
+<div class="panel pill" id="cooking-panel" hidden role="dialog" aria-label="캠핑 요리">
+  <h2>캠핑 요리</h2>
+  <p class="panel-sub">장비를 놓고 재료를 올려요. 다 익으면 꺼내 먹을 수 있어요.</p>
+  <div id="cooking-cards"></div>
+  <p id="cooking-note" role="status" aria-live="polite"></p>
+  <button class="panel-close" type="button">닫기</button>
+</div>
 <aside id="camp-tools" class="camp-tools pill" aria-label="캠프에서 쉬기">
-  <label class="volume-control">소리 <input id="volume-control" type="range" min="0" max="100" value="65" aria-label="캠핑장 소리 크기"></label>
   <span id="camp-connection" role="status">캠프에 연결 중…</span>
-  <button id="quiet-toggle" type="button" aria-pressed="true">🌙 조용히 쉬는 중</button>
-  <button id="invite-btn" type="button">🔗 옆자리 초대</button>
-  <button id="gift-btn" type="button">🍡 마시멜로 건네기</button>
-  <button id="add-log" type="button" hidden>🪵 장작 더 넣기</button>
+  <button id="quiet-toggle" type="button" aria-pressed="false" hidden>🌙 조용히 쉬는 중</button>
+  <button id="invite-btn" type="button" hidden>🔗 옆자리 초대</button>
+  <button id="gift-btn" type="button" hidden>🍡 마시멜로 건네기</button>
+  <button id="add-log" type="button" title="같은 공간의 모닥불에 장작 넣기">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 13 8M7 4l13 8M4 7l3-3M17 15l3-3M5 17l10-6M8 20l10-6M5 17l3 3"/><circle cx="18" cy="13.5" r="2"/></svg>
+    장작 넣기
+  </button>
+  <button id="go-store" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M9 20v-7h6v7M3 10c0 3 4 3 4 0 0 3 5 3 5 0 0 3 5 3 5 0 0 3 4 3 4 0"/></svg>
+    매점 가기
+  </button>
+  <button id="change-season" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C9 3 3 8 5 15c3 8 15 4 15-11ZM5 21 16 9M10 15l-1-5M13 12h5"/></svg>
+    계절 변경
+  </button>
 </aside>
 <div id="wake-shade" hidden aria-hidden="true"></div>
 <dialog id="invite-dialog" class="social-dialog pill" aria-labelledby="invite-title">
@@ -317,6 +411,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7V4M5.6 10.6 3.5 8.5M18.4 10.6l2.1-2.1"/><path d="M15 4.5c1-.8 2.2-.8 3 0 .8-.8 2-.8 3 0"/></svg>
     아침새소리
   </button>
+  <button id="btn-chat" type="button" aria-controls="chat" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8 8 0 0 1-8 8H4l1.5-4A8 8 0 1 1 20 11.5Z"/><path d="M8 10h8M8 14h5"/></svg>
+    대화
+  </button>
 </nav>
 
 <!-- (원본, 2026-10-30 송찬영 [AI]) <div class="hint">드래그로 둘러보기 · 휠로 확대/축소</div> -->
@@ -337,6 +435,7 @@
 </div>
 <div class="panel pill" id="bag-panel" hidden role="dialog" aria-label="가방">
   <h2>가방</h2>
+  <button id="cook-btn" class="cook-entry" type="button">🍲 요리하기</button>
   <p class="panel-sub" id="bag-empty">비어 있어요 — 매점에서 가져오세요</p>
   <div class="item-grid" id="bag-items"></div>
   <button class="panel-close" type="button">닫기</button>
@@ -355,6 +454,7 @@
 
 <section class="chat pill" id="chat" aria-label="채팅">
   <ol class="chat-log" id="chat-log" aria-live="polite"></ol>
+  <div class="quick-chat" id="quick-chat" aria-label="빠른 한마디"></div>
   <form class="chat-form" id="chat-form" autocomplete="off">
     <input id="chat-input" maxlength="200" placeholder="연결 중…" disabled aria-label="보낼 말">
     <button type="submit" id="chat-send" disabled>보내기</button>
@@ -372,9 +472,9 @@
     <form id="enter-form" autocomplete="off">
       <input id="nick-input" maxlength="12" placeholder="닉네임 (12자까지)" aria-label="닉네임">
       <div class="server-pick" role="radiogroup" aria-label="서버">
-        <label><input type="radio" name="server" value="1"><b>서버1</b><small>내 공간 · 같이</small></label>
-        <label><input type="radio" name="server" value="2"><b>서버2</b><small>차박 · 같이</small></label>
-        <label><input type="radio" name="server" value="3"><b>서버3</b><small>데크 · 같이</small></label>
+        <label><input type="radio" name="server" value="1"><b>서버1</b><small>내 공간</small></label>
+        <label><input type="radio" name="server" value="2"><b>서버2</b><small>차박</small></label>
+        <label><input type="radio" name="server" value="3"><b>서버3</b><small>데크</small></label>
       </div>
       <button id="enter" type="submit">들어가기</button>
       <button id="enter-cancel" type="button">취소</button>
@@ -391,10 +491,35 @@ import { FieldAudio } from './field-audio.mjs';
 import { createAurora } from './camp-aurora.mjs';
 import { createDetailedTent } from './camp-tent.mjs';
 import { createShopCart } from './shop-cart.mjs';
+import { RECIPES, createCooking, createCookingVisual } from './camp-cooking.mjs';
+import { requestPlaybackSession, resumeAudioContext } from './audio-session.mjs';
+import {campCorridors} from './camp-corridors.mjs';
+import {FIRE_FOCUS,addedWoodPlacement} from './camp-fire-layout.mjs';
+import {CAMP_AREAS,areaOffset,worldPacket} from './camp-world.mjs';
+import {createAreaScene} from './camp-area-scene.mjs';
+import {safePosition,camperPosition,campRoute,safeWorldPosition,worldRoute} from './camp-navigation.mjs';
+import { CAMP_SEATS, FIRE_SCALE, fireSurge } from './camp-circle.mjs';
+import { createSpeechBubbles } from './speech-bubbles.mjs';
+import { QUICK_PHRASES } from './quick-chat.mjs';
+import { createCampingChair } from './camp-chair.mjs';
+import { applyAvatarStyle } from './avatar-style.mjs';
 import { EXTRA_GEAR, recommendedGearIds, createGearProp } from './camp-catalog.mjs';
 import { createMaltese } from './camp-dog.mjs';
 import { createWaterSlide } from './camp-slide.mjs';
 import { createTapGesture, entryRedirect, consumeEntry, randomNickname } from './interactions.mjs';
+
+// Keep messages below the actual header, including wrapped
+// mobile headers, safe-area insets, orientation changes and larger text sizes.
+const topBar = document.querySelector('.top');
+function layoutTopOverlays() {
+  document.getElementById('toast').style.top = `${Math.ceil(topBar.getBoundingClientRect().bottom + 12)}px`;
+}
+const overlayResize = new ResizeObserver(layoutTopOverlays);
+overlayResize.observe(topBar);
+window.addEventListener('resize',layoutTopOverlays);
+window.visualViewport?.addEventListener('resize',layoutTopOverlays);
+document.fonts.ready.then(layoutTopOverlays);
+layoutTopOverlays();
 import { inviteAddress, photoCaption, drawPostcard, makeVisitorToken } from './camp-social.mjs';
 
 // ---------- 기본 ----------
@@ -430,7 +555,7 @@ controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
 controls.rotateSpeed = matchMedia('(pointer: coarse)').matches ? 0.65 : 1;
 controls.zoomSpeed = 0.8;
 controls.minDistance = 3;
-controls.maxDistance = 22;
+controls.maxDistance = 280;
 controls.maxPolarAngle = Math.PI * 0.495;
 
 // ---------- 하늘 · 별 · 달 ----------
@@ -607,9 +732,9 @@ const DECK_H = 0.15;   // 데크 높이
 // 서버(사용자에겐 서버1·2·3, 실제로는 한 서버의 방) — 내 캠프는 늘 원점이고, 지도를 옮겨 고른 자리가 원점에 오게 함
 //   1: 내 공간 — A구역 데크1, 같이 · 2: 차박 — 차 옆, 같이 · 3: 데크 — B구역 데크3, 같이
 const SERVERS = {
-  1: { name: '서버1 · 내 공간', anchor: [372, 268] },
-  2: { name: '서버2 · 차박', anchor: [388, 161] },
-  3: { name: '서버3 · 데크', anchor: [55, 207] },
+  1: { name: '서버1 · 내 공간', anchor: CAMP_AREAS[1].anchor },
+  2: { name: '서버2 · 차박', anchor: CAMP_AREAS[2].anchor },
+  3: { name: '서버3 · 데크', anchor: CAMP_AREAS[3].anchor },
 };
 const SERVER = (() => {
   const q = Number(new URLSearchParams(location.search).get('server'));
@@ -796,6 +921,15 @@ let treeLeaves;
   for (const cm of canopy) { cm.castShadow = true; cm.receiveShadow = true; cm.visible = false; scene.add(cm); }
   treeLeaves.c = canopy;
   treeLeaves.front = { from: outsideCount + inside.length, n: FRONT_N };
+  treeLeaves.clearCorridors = blocked => {
+    const zero=new THREE.Matrix4().makeScale(0,0,0);
+    const meshes=[trunks,leavesA,leavesB,...canopy];
+    for(let i=0;i<treeCount;i++){
+      trunks.getMatrixAt(i,tm);tm.decompose(tp,tq,ts);
+      if(blocked(tp,1.4*Math.max(ts.x,ts.z)))for(const mesh of meshes)mesh.setMatrixAt(i,zero);
+    }
+    for(const mesh of meshes){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
+  };
   treeLeaves.move = (i, pos) => {   // i 번째 나무를 pos 로 옮겨 심음 — 크기·방향·계절 색은 그대로
     trunks.getMatrixAt(i, tm); tm.decompose(tp, tq, ts);
     m.compose(pos, tq, ts); trunks.setMatrixAt(i, m); leavesA.setMatrixAt(i, m); leavesB.setMatrixAt(i, m);
@@ -811,11 +945,11 @@ let treeLeaves;
 const campTent = createDetailedTent(THREE);
 {
   const tent = campTent.group;
-  tent.position.set(-4.3, DECK_H, -3.2);
+  tent.position.set(CAMP_AREAS[SERVER].tent[0],DECK_H,CAMP_AREAS[SERVER].tent[1]);
   // (원본, 2026-10-30 송찬영 [AI]) tent.lookAt(-7, DECK_H, -18);   — 아침에 눈뜨면 차·P 표지판이 보여서 동북동 숲 쪽으로 돌림
-  tent.lookAt(9.9, DECK_H, -8.0);   // 입구는 캠핑장 동쪽 숲 가장자리를 향함 (아침 기상 시점)
+  tent.rotation.y=Math.atan2(14.2,-4.8);   // 입구는 캠핑장 동쪽 숲 가장자리를 향함 (아침 기상 시점)
   scene.add(tent);
-  if (SERVER === 2) tent.visible = false;
+
   const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 10), new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffb050, emissiveIntensity: 1.6 }));
   // (원본, 2026-10-30 송찬영 [AI]) lantern.position.set(-2.7, 0.14, -1.6);
   lantern.position.set(-2.7, 0.14 + DECK_H, -1.6);
@@ -1211,7 +1345,7 @@ if (SERVER !== 2) {
   const blocked = mapObjects.map(o => new THREE.Box3().setFromObject(o).expandByScalar(1.1));
   const road = ROAD_B.clone().sub(ROAD_A), roadLen = road.length(); road.divideScalar(roadLen);
   const onRoad = p => { const t = THREE.MathUtils.clamp((p.x - ROAD_A.x) * road.x + (p.z - ROAD_A.z) * road.z, 0, roadLen); return Math.hypot(p.x - ROAD_A.x - road.x * t, p.z - ROAD_A.z - road.z * t) < ROAD_W / 2 + 0.8; };
-  const mat = new THREE.Vector3(Math.sin(1.33), 0, Math.cos(1.33)).multiplyScalar(3.85);   // 누울 매트 데크 (MAT_ANGLE)
+  const mat = new THREE.Vector3(Math.sin(1.33), 0, Math.cos(1.33)).multiplyScalar(5.8);   // 누울 매트 데크 (MAT_ANGLE)
   const { from, n } = treeLeaves.front;
   for (let ring = 0; ring < 6 && frontTrees.length < n; ring++) {   // 가까운 줄부터 — 안쪽은 듬성, 바깥은 빽빽
     const d = 7 + ring * 2, count = 6 + ring * 3;
@@ -1224,26 +1358,16 @@ if (SERVER !== 2) {
     }
   }
 }
+const storeApproach=facilities.find(f=>f.group.userData.kind==='store').front;
+const blocksCampRoute=campCorridors(SERVER,storeApproach);
+treeLeaves.clearCorridors(blocksCampRoute);
+for(let i=frontTrees.length-1;i>=0;i--)if(blocksCampRoute(frontTrees[i],2.8))frontTrees.splice(i,1);
 makePier();
 
-function makeChair() {
-  const g = new THREE.Group();
-  const fabric = new THREE.MeshStandardMaterial({ color: 0x2f5d6b, roughness: 0.9 });
-  const metal = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.6, metalness: 0.4 });
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.6), fabric); seat.position.y = 0.48;
-  const back = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.06), fabric); back.position.set(0, 0.82, -0.3); back.rotation.x = -0.18;
-  g.add(seat, back);
-  for (const [x, z] of [[-0.32, -0.27], [0.32, -0.27], [-0.32, 0.27], [0.32, 0.27]]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.48, 6), metal);
-    leg.position.set(x, 0.24, z); g.add(leg);
-  }
-  g.traverse(o => { o.castShadow = true; o.receiveShadow = true; });
-  return g;
-}
-const seatAngles = [0.55, 2.0, 3.6, 5.0];
-const seats = seatAngles.map(a => {
+function makeChair() {return createCampingChair(THREE);}
+const seats = CAMP_SEATS.map(({x,z}) => {
   const ch = makeChair();
-  ch.position.set(Math.sin(a) * 2.4, 0, Math.cos(a) * 2.4);
+  ch.position.set(x, 0, z);
   ch.lookAt(0, 0, 0);
   scene.add(ch);
   return ch;
@@ -1284,6 +1408,7 @@ const legs = [];
   const skin = mat(0xf0c4a0), hair = mat(0x5a3a24), hatMat = mat(0xd6c8a8), band = mat(0x5f6b45);
   const hoodie = mat(0xf2efe8), vest = mat(0x7d8a5a, { side: THREE.DoubleSide }), shorts = mat(0xbfa27a);
   const sock = mat(0xf5f3ee), boot = mat(0x7a5a3c), sole = mat(0xe6dccb), dark = mat(0x2a1c14, { roughness: 0.5 });
+  for(const [name,material] of Object.entries({skin,hair,hat:hatMat,band,hoodie,vest,pants:shorts,sock,boot}))material.name=name;
 
   // (원본, 2026-10-30 송찬영 [AI]) 하체 (앉은 자세 고정) — 걷기용 관절 다리로 교체
   // const hips = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.32), shorts); hips.position.set(0, 0.6, 0);
@@ -1319,6 +1444,7 @@ const legs = [];
   const hood = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.05, 8, 20), hoodie); hood.position.set(0, 1.1, -0.04); hood.rotation.x = Math.PI / 2;
   // (원본, 2026-10-30 송찬영 [AI]) const pack = new THREE.Mesh(...)  — 누울 때 숨기려고 바깥 변수로
   pack = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.32, 0.12), mat(0x4a3a2c)); pack.position.set(0, 0.92, -0.25);
+  pack.material.name='pack';
   me.add(torso, vestMesh, hood, pack);
 
   // 머리 — 얼굴·머리카락·버킷햇
@@ -1329,12 +1455,16 @@ const legs = [];
   const hatBand = new THREE.Mesh(new THREE.CylinderGeometry(0.313, 0.313, 0.06, 28), band); hatBand.position.y = 1.56;
   const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.48, 0.09, 32, 1, true), mat(0xd6c8a8, { side: THREE.DoubleSide }));
   brim.position.y = 1.5;
+  crown.name='hat-crown';hatBand.name='hat-band';brim.name='hat-brim';brim.material.name='hat';
+  const beanie=new THREE.Mesh(new THREE.SphereGeometry(.3,20,12,0,Math.PI*2,0,Math.PI/2),hatMat);
+  beanie.position.y=1.55;beanie.name='hat-beanie';beanie.visible=false;me.add(beanie);
   me.add(head, hairCap, crown, hatBand, brim);
 
   // 얼굴 — 눈·둥근 안경·웃는 입
   for (const x of [-0.105, 0.105]) {
     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 10), dark); eye.position.set(x, 1.39, 0.265);
     const lens = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.013, 8, 28), dark); lens.position.set(x, 1.39, 0.305);
+    lens.name=`glasses-${x<0?'left':'right'}`;
     me.add(eye, lens);
   }
   const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.05, 6), dark); bridge.rotation.z = Math.PI / 2; bridge.position.set(0, 1.4, 0.31);
@@ -1415,6 +1545,7 @@ let currentSpot = null;   // server-reserved chair or resting spot, including th
 let occupiedSpots = new Set();
 let sitBlend = 1;            // 1 = 앉은 자세, 0 = 선 자세
 let lieBlend = 0;            // 1 = 누운 자세
+let walkWaypoints = [];
 let walkTo = null;           // 목적지 (Vector3)
 let walkSeat = null;         // 도착하면 앉을 의자
 let walkLie = false;         // 도착하면 매트에 누움
@@ -1435,15 +1566,15 @@ const matClickables = [];
 // 누울 매트 — 모닥불 옆, 발은 불 쪽·머리는 바깥쪽
 const MAT_ANGLE = 1.33;
 const MAT_DIR = new THREE.Vector3(Math.sin(MAT_ANGLE), 0, Math.cos(MAT_ANGLE));
-const MAT_FOOT = MAT_DIR.clone().multiplyScalar(2.85);
+const MAT_FOOT = MAT_DIR.clone().multiplyScalar(4.8);
 {
   const matMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 2.0), new THREE.MeshStandardMaterial({ color: 0x3f7d8c, roughness: 0.95 }));
   // (원본, 2026-10-30 송찬영 [AI]) matMesh.position.copy(MAT_DIR).multiplyScalar(3.7).setY(0.02);
-  matMesh.position.copy(MAT_DIR).multiplyScalar(3.7).setY(MAT_DECK_H + 0.02);   // 나무 데크 위
+  matMesh.position.copy(MAT_DIR).multiplyScalar(5.65).setY(MAT_DECK_H + 0.02);
   matMesh.rotation.y = MAT_ANGLE;
   const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xe8e0cc, roughness: 1 }));
   // (원본, 2026-10-30 송찬영 [AI]) pillow.position.copy(MAT_DIR).multiplyScalar(4.3).setY(0.08);
-  pillow.position.copy(MAT_DIR).multiplyScalar(4.3).setY(MAT_DECK_H + 0.08);
+  pillow.position.copy(MAT_DIR).multiplyScalar(6.25).setY(MAT_DECK_H + 0.08);
   pillow.rotation.y = MAT_ANGLE;
   // (원본, 2026-10-30 송찬영 [AI]) for (const m of [matMesh, pillow]) { m.receiveShadow = true; scene.add(m); }
   // 매트 밑 나무 데크 — 매트보다 조금 넓고 길게, 널 사이 홈
@@ -1451,13 +1582,26 @@ const MAT_FOOT = MAT_DIR.clone().multiplyScalar(2.85);
   const wood = new THREE.MeshStandardMaterial({ color: 0xa8784e, roughness: 0.9 }), gap = new THREE.MeshStandardMaterial({ color: 0x5a3d26 });
   matDeck.add(new THREE.Mesh(new THREE.BoxGeometry(1.4, MAT_DECK_H, 2.5), wood).translateY(MAT_DECK_H / 2));
   for (let i = 1; i < 5; i++) matDeck.add(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.005, 2.5), gap).translateX(-0.7 + i * 0.28).translateY(MAT_DECK_H + 0.002));
-  matDeck.position.copy(MAT_DIR).multiplyScalar(3.85);
+  matDeck.position.copy(MAT_DIR).multiplyScalar(5.8);
   matDeck.rotation.y = MAT_ANGLE;
   matDeck.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   scene.add(matDeck);
   for (const m of [matMesh, pillow]) { m.receiveShadow = true; scene.add(m); }
   matClickables.push(matDeck, matMesh, pillow);   // 누르면 가서 누움
 }
+const extraRestSpots = [
+  {spot:'mat2',x:-5.6,z:1.5,color:0xc68157},
+  {spot:'mat3',x:1.2,z:-5.7,color:0x778c56},
+].map(({spot,x,z,color})=>{
+  const group=new THREE.Group(),angle=Math.atan2(x,z);
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(1.25,MAT_DECK_H,2.4),new THREE.MeshStandardMaterial({color:0xa8784e}));deck.position.y=MAT_DECK_H/2;
+  const mat=new THREE.Mesh(new THREE.BoxGeometry(.9,.05,2),new THREE.MeshStandardMaterial({color,roughness:.95}));mat.position.y=MAT_DECK_H+.025;
+  const pillow=new THREE.Mesh(new THREE.BoxGeometry(.5,.12,.3),new THREE.MeshStandardMaterial({color:0xe8e0cc}));pillow.position.set(0,MAT_DECK_H+.09,.72);
+  group.add(deck,mat,pillow);group.position.set(x,0,z);group.rotation.y=angle;
+  group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});scene.add(group);matClickables.push(group);
+  const foot=new THREE.Vector3(x-Math.sin(angle)*.85,0,z-Math.cos(angle)*.85);
+  return {group,spot,foot,face:new THREE.Vector3(-x,0,-z)};
+});
 const STAND_LIFT = 0.15;     // 서면 다리 길이만큼 몸을 올림
 const WALK_SPEED = 1.7;
 const WALK_MAX_R = 8;        // 걸을 수 있는 반경
@@ -1481,7 +1625,7 @@ function startWalk(point, seat = null, lie = false) {
   }
   const p = point.clone(); p.y = 0;
   const r = Math.hypot(p.x, p.z);
-  if (!seat && r < 1.2) p.multiplyScalar(1.2 / Math.max(r, 0.001));   // 불 속으로는 안 들어감
+  Object.assign(p,safeWorldPosition(p.x,p.z,SERVER,Math.atan2(me.position.z,me.position.x)));
   // (원본, 2026-10-30 송찬영 [AI]) if (r > 30) p.multiplyScalar(30 / r);
   // (원본, 2026-10-30 송찬영 [AI]) if (r > WALK_MAX_R) p.multiplyScalar(WALK_MAX_R / r);   // 캠프장 안에서만
   // (원본, 2026-10-30 송찬영 [AI]) const maxR = inFacZone(p.x, p.z) ? 17 : WALK_MAX_R;     // 편의시설 구역은 17까지
@@ -1493,14 +1637,17 @@ function startWalk(point, seat = null, lie = false) {
   stopActivity();                    // 기타·낚시·망원경은 자리를 뜨면 멈춤
   walkLie = lie;
   walkBoost = pose === 'walk' && walkTo ? Math.min(3, walkBoost + 0.6) : 1;   // 걷는 중에 또 누르면 빨라짐
+  walkWaypoints=worldRoute(me.position,p,SERVER);walkWaypoints.pop();
   walkTo = p; walkSeat = seat; pose = 'walk';
   currentSpot = targetSpot;
   sendPresenceNow();
 }
 function updateWalk(dt, t) {
   if (walkTo) {
-    const dx = walkTo.x - me.position.x, dz = walkTo.z - me.position.z, dist = Math.hypot(dx, dz);
-    if (dist < 0.05) {
+    while(walkWaypoints.length&&Math.hypot(walkWaypoints[0].x-me.position.x,walkWaypoints[0].z-me.position.z)<.05)walkWaypoints.shift();
+    const stepTarget=walkWaypoints[0]||walkTo;
+    const dx = stepTarget.x - me.position.x, dz = stepTarget.z - me.position.z, dist = Math.hypot(dx, dz);
+    if (dist < 0.05 && !walkWaypoints.length) {
       walkTo = null;
       walkBoost = 1;   // 도착하면 다시 보통 걸음
       if (walkSeat) {
@@ -1583,7 +1730,8 @@ renderer.domElement.addEventListener('pointerup', e => {
     const it = campInteract.find(i => { let o = gearHit.object; while (o && o !== i.obj) o = o.parent; return !!o; });
     if (it) { it.onClick(); return; }
   }
-  if (raycaster.intersectObjects(matClickables, true)[0]) { goLie(); return; }   // 매트 → 가서 누움
+  const restHit=raycaster.intersectObjects(matClickables,true)[0];
+  if(restHit){const rest=extraRestSpots.find(r=>{let o=restHit.object;while(o&&o!==r.group)o=o.parent;return !!o;});if(rest)startWalk(rest.foot,null,rest);else goLie();return;}   // 매트 → 가서 누움
   const seatHit = raycaster.intersectObjects(seats, true)[0];
   if (seatHit) {
     let o = seatHit.object;
@@ -1603,6 +1751,7 @@ renderer.domElement.addEventListener('pointerup', e => {
 
 // ---------- 모닥불 ----------
 const fire = new THREE.Group();
+fire.scale.setScalar(FIRE_SCALE);
 scene.add(fire);
 {
   const stoneMat = new THREE.MeshStandardMaterial({ color: 0x77736c, roughness: 1, flatShading: true });
@@ -1616,20 +1765,28 @@ scene.add(fire);
   }
 }
 const logs = [];
+const addedLogs=[];let addedLogSerial=0;
 function addLog(dropIn = false) {
+  if(dropIn){
+    const p=addedWoodPlacement(addedLogSerial++),burning=createBurningWood(THREE,rand()*20);
+    const log=new THREE.Mesh(new THREE.CylinderGeometry(p.radius*.75,p.radius,p.length,12,6),burning.material);
+    log.position.set(p.x,p.y,p.z);log.rotation.set(0,p.yaw,Math.PI/2);log.castShadow=true;
+    Object.assign(log.userData,{burning,burnAge:20,landY:p.y,dropFrom:.65});fire.add(log);logs.push(log);addedLogs.push(log);
+    if(addedLogs.length>6){const old=addedLogs.shift();logs.splice(logs.indexOf(old),1);fire.remove(old);old.geometry.dispose();old.material.dispose();old.userData.burning.material.bumpMap?.dispose();}
+    return;
+  }
   const burning = createBurningWood(THREE, rand() * 20);
-  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.12, 1.0, 20, 8), burning.material);
+  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.14, 1.7, 16, 8), burning.material);
   log.userData.burning = burning;
   // A newly added log is already catching fire when it lands, so it reads as
   // part of the burning pile instead of a cold piece disappearing in the flame.
   log.userData.burnAge = dropIn ? 20 : 20 + logs.length * 14;
-  const a = (logs.length % 2 ? Math.PI / 2 : 0) + (rand() - 0.5) * 0.18;
-  log.rotation.set(Math.PI / 2 - 0.35, a, 0, 'YXZ');
-  const layer = Math.floor(logs.length / 2);
-  const offset = dropIn ? 0.2 : 0.09;
-  const landY = 0.28 + layer * 0.07;
-  log.userData.landY = landY;
-  log.position.set(Math.cos(a) * offset, landY, Math.sin(a) * offset);
+  const a = (logs.length * 2.39996) % (Math.PI * 2);
+  const base = new THREE.Vector3(Math.cos(a)*.65,.12,Math.sin(a)*.65);
+  const tip = new THREE.Vector3(Math.cos(a+.3)*.06,1.65,Math.sin(a+.3)*.06);
+  log.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tip.clone().sub(base).normalize());
+  log.position.copy(base).add(tip).multiplyScalar(.5);
+  log.userData.landY = log.position.y;
   log.castShadow = true;
   log.userData.dropFrom = dropIn ? 0.85 : 0;
   fire.add(log);
@@ -1638,7 +1795,7 @@ function addLog(dropIn = false) {
     const old = logs.shift(); fire.remove(old); old.geometry.dispose(); old.material.dispose();
   }
 }
-for (let i = 0; i < 4; i++) addLog();
+for (let i = 0; i < 6; i++) addLog();
 
 const naturalFire = createCampfireFlames(THREE);
 fire.add(naturalFire.group);
@@ -1659,6 +1816,12 @@ fireLight.shadow.radius = 3;
 fireLight.shadow.bias = -0.002;
 scene.add(fireLight);
 
+const otherAreaScenes=new Map();
+for(const room of [1,2,3])if(room!==SERVER){
+  const area=createAreaScene(THREE,{offset:areaOffset(room,SERVER),chair:seats[0],tent:campTent.group,tentPosition:CAMP_AREAS[room].tent,restSpots:extraRestSpots.map(s=>s.group)});
+  const sign=makePost(CAMP_AREAS[room].name,1.5,.4);sign.position.set(-6,0,0);area.group.add(sign);
+  scene.add(area.group);otherAreaScenes.set(room,area);
+}
 const sparkCount = 36;
 const sparkPos = new Float32Array(sparkCount * 3);
 const sparkVel = new Float32Array(sparkCount);
@@ -1675,7 +1838,25 @@ function resetSpark(i, spread = 1) {
 }
 for (let i = 0; i < sparkCount; i++) resetSpark(i);
 
-let fireLevel = 0.45, visualFireLevel = 0.45;
+let fireLevel = 0.55, visualFireLevel = 0.55;
+let woodAddedAt = -Infinity, pendingWood = null, woodRequestAt = -Infinity;
+function requestCampWood(consume=false) {
+  if(!chatWs || chatWs.readyState!==WebSocket.OPEN || myId===null){toast('캠핑장에 연결된 뒤 장작을 넣어 주세요.');return;}
+  if(Date.now()-woodRequestAt<3000 || pendingWood){toast('장작이 타오르는 동안 잠깐 기다려 주세요.');return;}
+  if(consume && !(bag.firewood>0))return;
+  woodRequestAt=Date.now();const request=pendingWood={consume};
+  chatWs.send(JSON.stringify({type:'firewood'}));
+  setTimeout(()=>{if(pendingWood===request)pendingWood=null;},8000);
+}
+function receiveCampWood(message) {
+  addLog(true);woodAddedAt=clock.elapsedTime;emitFireCrackle(.9);
+  if(message.id===myId) {
+    if(pendingWood?.consume && bag.firewood>0){bag.firewood--;if(!bag.firewood)delete bag.firewood;saveJson('camp-bag',bag);}
+    pendingWood=null;
+  }
+  if(sound.ready)sound.whoosh();
+  toast(message.id===myId?'장작을 넣었어요. 불이 타오릅니다 🔥':`${message.name}님이 장작을 넣었어요 🔥`);
+}
 let crackleFlash = 0, nextCrackleAt = 0;
 function emitFireCrackle(strength) {
   crackleFlash = Math.min(1, 0.45 + strength * 0.4);
@@ -1697,6 +1878,7 @@ class Sound {
   }
   get ready() { return !!this.ctx && this.ctx.state === 'running' && !this.muted; }
   unlock() {
+    requestPlaybackSession(navigator);
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -1734,7 +1916,7 @@ class Sound {
         period: 0.35 + Math.random() * 0.6, pan: Math.random() * 1.8 - 0.9, gain: 0.04 + Math.random() * 0.06, next: 0,
       }));
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    resumeAudioContext(this.ctx);
     this.recording?.play(mode === 'morning' ? 'morning' : 'fire');
   }
   loopNoise(type, freq, q) {
@@ -2239,7 +2421,7 @@ function applyTime(dt) {
   skyUniforms.bottom.value.copy(cur.bottom);
   scene.fog.color.copy(cur.fog);
   // (원본, 2026-10-30 송찬영 [AI]) scene.fog.density = cur.fogDensity;
-  scene.fog.density = cur.fogDensity * 0.55;   // 캠핑장이 넓어져 안개를 옅게
+  scene.fog.density = cur.fogDensity * 0.35;
   hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGround); hemi.intensity = cur.hemi;
   // (원본, 2026-10-30 송찬영 [AI]) sun.color.copy(cur.sunColor); sun.intensity = cur.sun; sun.position.copy(cur.sunPos);
   sun.color.copy(cur.sunColor); sun.intensity = cur.sun;
@@ -2258,21 +2440,26 @@ function endMorningView() {
   renderer.domElement.style.filter = '';
   controls.enabled = true; controls.minDistance = 3;
   me.visible = true; if (myTag) myTag.visible = true;
-  if (SERVER === 2) campTent.group.visible = false;
+
 }
 function beginMorningView() {
-  const view = campTent.interiorView();
   campTent.group.visible = true; campTent.group.updateWorldMatrix(true, false);
-  document.getElementById('add-log').hidden = true;
+  const tentSpot='lie:tent';
+  if(spotIsTaken(tentSpot)){toast('텐트에서 다른 분이 쉬고 있어요');return;}
+  stopActivity();walkTo=null;walkWaypoints=[];walkSeat=null;walkLie=false;afterArrive=null;walkFacility=null;
+  const sleeping=campTent.group.localToWorld(new THREE.Vector3(.34,0,.45));
+  const facing=campTent.group.localToWorld(new THREE.Vector3(.34,0,1.45)).sub(sleeping);faceToward(facing.x,facing.z);
+  me.position.x=sleeping.x;me.position.z=sleeping.z;pose='lie';lieSpot='tent';currentSpot=tentSpot;sendPresenceNow();
   morningInside = true; fireWatching = false; camHold = false; camTween = null;
-  const from = campTent.group.localToWorld(view.sleepPos.clone());
-  const to = campTent.group.localToWorld(view.awakePos.clone());
-  const target = campTent.group.localToWorld(view.target.clone());
-  waking = {time:0, from, to, target};
-  camera.position.copy(from); controls.target.copy(target);
-  controls.minDistance = .25; controls.maxPolarAngle = Math.PI * .75; controls.enabled = false;
-  const shade = document.getElementById('wake-shade'); shade.hidden = false; shade.style.opacity = 1;
-  me.visible = false; if (myTag) myTag.visible = false;
+  const view=campTent.interiorView();
+  const from=campTent.group.localToWorld(view.sleepPos.clone());
+  const to=campTent.group.localToWorld(view.awakePos.clone());
+  const target=campTent.group.localToWorld(view.target.clone());
+  waking={time:0,from,to,target};
+  camera.position.copy(from);controls.target.copy(target);
+  controls.minDistance=.25;controls.maxPolarAngle=Math.PI*.75;controls.enabled=false;
+  const shade=document.getElementById('wake-shade');shade.hidden=false;shade.style.opacity=1;
+  me.visible=false;if(myTag)myTag.visible=false;
 }
 
 // ---------- 카메라 이동 ----------
@@ -2282,6 +2469,8 @@ const VIEWS = {
   stars: { pos: new THREE.Vector3(2.2, 1.3, 4.2), target: new THREE.Vector3(-2, 14, -8), maxPolar: Math.PI * 0.85 },
 };
 const FIRE_VIEW_TARGET = VIEWS.normal.target;
+let walkingFrame = false, cameraManualUntil = 0;
+controls.addEventListener('start', () => { cameraManualUntil = performance.now() + 5000; });
 const followTarget = new THREE.Vector3(), followStep = new THREE.Vector3();
 let camTween = null;
 // (원본, 2026-10-30 송찬영 [AI]) function flyTo(view) {
@@ -2289,7 +2478,6 @@ let camTween = null;
 function flyTo(view) { flyToView(VIEWS[view]); }
 function flyToView(v) {   // { pos, target, maxPolar } 로 날아감
   fireWatching = v.closeFire === true;
-  document.getElementById('add-log').hidden = !fireWatching;
   controls.minDistance = fireWatching ? 1.35 : 3;
   // 올려다볼 땐 회전 제한을 먼저 풀고, 내려올 땐 도착한 뒤 다시 건다
   if (v.maxPolar > controls.maxPolarAngle) controls.maxPolarAngle = v.maxPolar;
@@ -2347,8 +2535,9 @@ volumeControl.addEventListener('input', () => {
 const chatLog = document.getElementById('chat-log');
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
+const speechBubbles = createSpeechBubbles(document.getElementById('speech-bubbles'));
 let chatWs = null, myName = '', chatRetry = 0;
-let quietMode = (() => {try {return localStorage.getItem('camp-quiet') !== 'false';} catch {return true;}})();
+let quietMode = false;   // 채팅은 별도 전환 없이 사용
 let modePending = false;
 let visitReported = false, foregroundSeconds = 0, engagedReported = false;
 let previousForegroundTick = performance.now();
@@ -2385,9 +2574,11 @@ function renderSocial() {
   document.getElementById('gift-btn').disabled = !connected || quietMode;
   document.getElementById('invite-btn').disabled = !connected;
   document.getElementById('chat').hidden = quietMode;
+  if(quietMode)speechBubbles.clear();
   document.getElementById('camp-connection').textContent = connected
     ? `${SERVERS[SERVER].name} · ${remotes.size + 1}명이 쉬는 중`
     : '다시 연결하는 중…';
+  refreshCampPresence();
   setChatReady(connected);
 }
 function remoteLabel(name, quiet) { return `${quiet ? '🌙' : '☕'} ${name}`; }
@@ -2407,6 +2598,7 @@ function addChat(name, text, self) {
 }
 function setChatReady(ok) {
   chatInput.disabled = !ok || quietMode; chatSend.disabled = !ok || quietMode;
+  document.querySelectorAll('#quick-chat button').forEach(button=>{button.disabled=!ok||quietMode;});
   chatInput.placeholder = quietMode ? '지금은 조용히 쉬는 중이에요' : ok ? `나는 「${myName}」 — 말 걸기` : '연결 중…';
 }
 function connectChat() {
@@ -2421,7 +2613,7 @@ function connectChat() {
     // (원본, 2026-10-30 송찬영 [AI]) if (m.type === 'welcome') { myName = m.name; chatRetry = 0; setChatReady(true); }
     if (m.type === 'welcome') {
       myName = m.name; chatRetry = 0; setChatReady(true);
-      myId = m.id; (m.peers || []).forEach(addRemote);
+      myId = m.id; applyAvatarStyle(me,m.appearance??0); (m.peers || []).forEach(addRemote);
       currentSpot = m.spot ?? null;
       quietMode = m.quiet !== false; modePending = false;
       renderSocial(); reportEntry();
@@ -2444,20 +2636,52 @@ function connectChat() {
       walkTo = null; walkSeat = null; walkLie = false;   // 먼저 와 있던 사람들
       lastSent = '';                                     // 내 자리를 바로 한 번 알림
       if (wantNick && wantNick !== myName) sendNick(wantNick);   // 정해 둔 닉네임으로
-      updateNick();
+      updateNick();startWorldWatchers();
     }
     else if (m.type === 'renamed') { myName = m.name; setChatReady(true); updateNick(); }
-    else if (m.type === 'chat' && !quietMode) addChat(m.name, m.text, m.name === myName);
+    else if (m.type === 'chat' && !quietMode) {
+      addChat(m.name,m.text,m.id===myId);
+      speechBubbles.show(m.id,m.text,clock.elapsedTime);
+    }
   };
   ws.onclose = () => {
+    stopWorldWatchers();
     setChatReady(false);
     currentSpot = null; occupiedSpots.clear();
     walkTo = null; walkSeat = null; walkLie = false; pose = 'stand';
     chatWs = null; modePending = false; visitReported = false; foregroundSeconds = 0; engagedReported = false;
+    pendingWood=null;speechBubbles.clear();
     clearRemotes();
     renderSocial();   // 끊기면 다른 사람 아바타 지움 (다시 붙으면 welcome 으로 다시 받음)
     setTimeout(connectChat, Math.min(10000, 1000 * 2 ** chatRetry++));   // 1·2·4·8·10초… 다시 붙음
   };
+}
+// Read-only subscriptions never join the other rooms or reserve another chair.
+const worldWatchers=new Map();let worldWatchEpoch=0;
+function stopWorldWatchers(){worldWatchEpoch++;for(const ws of worldWatchers.values())ws.close();worldWatchers.clear();}
+function startWorldWatchers(){
+  stopWorldWatchers();const epoch=worldWatchEpoch;
+  function connect(room){
+    if(epoch!==worldWatchEpoch||chatWs?.readyState!==WebSocket.OPEN)return;
+    const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/watch?server=${room}`);
+    worldWatchers.set(room,ws);
+    const clearArea=()=>{for(const [id,r] of remotes)if(r.area===room)removeRemote(id);};
+    ws.onmessage=e=>{
+      if(epoch!==worldWatchEpoch)return;
+      let packet;try{packet=JSON.parse(e.data);}catch{return;}
+      if(packet.type==='welcome'){ws.close();return;}
+      if(packet.type==='watch'){
+        clearArea();for(const peer of packet.peers||[])addRemote(worldPacket({...peer,type:'join'},room,SERVER));renderSocial();return;
+      }
+      if(packet.type==='firewood'){otherAreaScenes.get(room)?.surge(clock.elapsedTime);return;}
+      const m=worldPacket(packet,room,SERVER);
+      if(onPresence(m))return;
+      if(m.type==='chat'&&!quietMode){addChat(`${m.name} · ${CAMP_AREAS[room].name}`,m.text,false);speechBubbles.show(m.id,m.text,clock.elapsedTime);}
+    };
+    ws.onclose=()=>{if(epoch!==worldWatchEpoch)return;worldWatchers.delete(room);clearArea();renderSocial();setTimeout(()=>connect(room),5000);};
+    ws.onerror=()=>ws.close();
+  }
+  for(const room of [1,2,3])if(room!==SERVER)connect(room);
 }
 // (원본, 2026-10-30 송찬영 [AI]) if (location.protocol.startsWith('http')) connectChat();
 // (원본, 2026-10-30 송찬영 [AI]) else chatInput.placeholder = '서버(serve.cmd)로 열면 대화할 수 있어요';
@@ -2479,11 +2703,13 @@ function copyLook(dst) {   // 계절 옷 — 내 아바타의 보임·크기를 
 }
 function addRemote(p) {
   if (!p || p.id === myId || remotes.has(p.id)) return;
+  p=camperPosition(p);
   const g = avatarTemplate.clone(true);
   g.rotation.order = 'YXZ';
   copyLook(g);
+  applyAvatarStyle(g,p.appearance??p.id??0);
   const tag = makeNameTag(remoteLabel(p.name, p.quiet !== false));
-  const r = { id: p.id, name: p.name, spot: p.spot ?? null, quiet: p.quiet !== false, g, tag, tx: p.x ?? 0, tz: p.z ?? 0, tyaw: p.yaw ?? 0, pose: p.pose ?? 'stand', lieSpot: p.lieSpot ?? 'mat',
+  const r = { id: p.id, area:p.area??SERVER, name: p.name, spot: p.spot ?? null, quiet: p.quiet !== false, g, tag, tx: p.x ?? 0, tz: p.z ?? 0, tyaw: p.yaw ?? 0, pose: p.pose ?? 'stand', lieSpot: p.lieSpot ?? 'mat',
     sit: p.pose === 'sit' ? 1 : 0, lie: p.pose === 'lie' ? 1 : 0, phase: 0, waveUntil: 0,
     armL: g.getObjectByName('armL'), armR: g.getObjectByName('armR'), hips: [g.getObjectByName('hip0'), g.getObjectByName('hip1')], knees: [g.getObjectByName('knee0'), g.getObjectByName('knee1')] };
   g.position.set(r.tx, 0, r.tz);
@@ -2491,8 +2717,11 @@ function addRemote(p) {
   remotes.set(p.id, r);
 }
 function removeRemote(id) {
+  speechBubbles.remove(id);
   const r = remotes.get(id); if (!r) return;
   scene.remove(r.g, r.tag); r.tag.material.map.dispose(); r.tag.material.dispose();
+  const ownedMaterials=new Set();r.g.traverse(node=>{if(node.isMesh)for(const material of Array.isArray(node.material)?node.material:[node.material])ownedMaterials.add(material);});
+  for(const material of ownedMaterials)material.dispose();
   remotes.delete(id);
 }
 function clearRemotes() { for (const id of [...remotes.keys()]) removeRemote(id); }
@@ -2507,6 +2736,8 @@ function waveAt(r) {   // 그 사람 쪽을 보고 손 흔들기 (앉거나 누�
   waveUntil = clock.elapsedTime + 2.2;
 }
 function onPresence(m) {   // 처리했으면 true
+  if(m.type==='firewood'){receiveCampWood(m);return true;}
+  if(m.type==='notice' && m.code==='wood-rate-limit')pendingWood=null;
   if (m.type === 'mode') {
     if (m.id === myId) {
       quietMode = m.quiet; modePending = false;
@@ -2551,18 +2782,16 @@ function onPresence(m) {   // 처리했으면 true
     let r = remotes.get(m.id);
     if (!r) { addRemote(m); r = remotes.get(m.id); }
     if (r?.spot && r.spot !== m.spot) occupiedSpots.delete(r.spot);
-    if (r) { r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; if (typeof m.quiet === 'boolean' && r.quiet !== m.quiet) { r.quiet = m.quiet; updateRemoteLabel(r); } }
+    if (r) { m=camperPosition(m); r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; if (typeof m.quiet === 'boolean' && r.quiet !== m.quiet) { r.quiet = m.quiet; updateRemoteLabel(r); } }
     return true;
   }
-  if (!quietMode && m.type === 'act' && m.act === 'hello') {   // 서로 인사 — 나한테 하면 알려 주고 자동으로 답례
+  if (!quietMode && m.type === 'act' && m.act === 'hello') {   // 상대가 직접 보낸 인사만 표시
+    if (m.reply) return true;   // 이전 버전 탭에서 오는 자동 답례는 표시하지 않음
     const r = remotes.get(m.id);
     if (r) {
       r.waveUntil = clock.elapsedTime + 2.2;
       r.tyaw = Math.atan2(me.position.x - r.g.position.x, me.position.z - r.g.position.z) * (m.to === myId ? 1 : 0) || r.tyaw;
-      if (m.to === myId) {
-        if (m.reply) toast(`${r.name}님도 인사했어요 👋`);
-        else { toast(`${r.name}님이 인사했어요 👋`); waveAt(r); sendAct({ act: 'hello', to: r.id, reply: true }); }
-      }
+      if (m.to === myId) toast(`${r.name}님이 인사했어요 👋`);
     }
     return true;
   }
@@ -2592,6 +2821,7 @@ function presenceTick(dt, t) {
     const g = r.g, dx = r.tx - g.position.x, dz = r.tz - g.position.z, d = Math.hypot(dx, dz);
     if (d > 6) { g.position.x = r.tx; g.position.z = r.tz; }
     else { const k = Math.min(1, dt * 8); g.position.x += dx * k; g.position.z += dz * k; }
+    Object.assign(g.position,safeWorldPosition(g.position.x,g.position.z,SERVER,0));
     const yaw = g.rotation.y + Math.atan2(Math.sin(r.tyaw - g.rotation.y), Math.cos(r.tyaw - g.rotation.y)) * Math.min(1, dt * 8);
     r.sit += ((r.pose === 'sit' ? 1 : 0) - r.sit) * Math.min(1, dt * 6);
     r.lie += ((r.pose === 'lie' ? 1 : 0) - r.lie) * Math.min(1, dt * 3);
@@ -2610,13 +2840,21 @@ function presenceTick(dt, t) {
     placeTag(r.tag, g);
   }
 }
+function sendChatText(value) {
+  const text=value.trim().slice(0,200);
+  if(!text || quietMode || !chatWs || chatWs.readyState!==WebSocket.OPEN)return false;
+  chatWs.send(JSON.stringify({type:'chat',text}));return true;
+}
 document.getElementById('chat-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text || !chatWs || chatWs.readyState !== WebSocket.OPEN) return;
-  chatWs.send(JSON.stringify({ type: 'chat', text }));
-  chatInput.value = '';
+  e.preventDefault();if(sendChatText(chatInput.value))chatInput.value='';
 });
+for(const phrase of QUICK_PHRASES) {
+  const button=document.createElement('button');button.type='button';button.textContent=phrase;button.disabled=true;
+  button.addEventListener('click',()=>{
+    sendChatText(phrase);
+  });
+  document.getElementById('quick-chat').append(button);
+}
 
 // 캠핑 엽서 — 사용자 동작으로만 저장하거나 공유함.
 let photoBlob = null, photoURL = '';
@@ -2756,11 +2994,36 @@ if (pendingEntry.enter) {
 const pendingEntry = consumeEntry(location.href);
 if (pendingEntry.enter) history.replaceState(null, '', pendingEntry.url);
 finishEntry();
-for (const type of ['pointerdown', 'keydown']) window.addEventListener(type, () => sound.unlock(), { once: true });   // 소리는 첫 터치에 켜짐
+for (const type of ['pointerup', 'keydown', 'click']) window.addEventListener(type, () => {if (!sound.muted) sound.unlock();}, {passive:true});
+document.addEventListener('visibilitychange', () => {if (!document.hidden && sound.ctx && !sound.muted) sound.unlock();});
 // 서버 고르기 — 처음 화면에 지금 서버 표시, 왼쪽 위 「서버N」을 누르면 다시 고름
 document.querySelector(`input[name=server][value="${SERVER}"]`).checked = true;
 const serverBtn = document.getElementById('server-btn');
 serverBtn.textContent = `${SERVERS[SERVER].name} ✎`;
+const serverCount = document.createElement('span');
+serverCount.id = 'server-count';
+serverCount.setAttribute('aria-live', 'polite');
+serverCount.textContent = '연결 확인 중…';
+serverBtn.append(serverCount);
+serverBtn.title = '전체 캠핑장 접속 인원 (모든 공간·본인 포함) · 눌러서 서버 바꾸기';
+let presenceLoading = false, presenceCheckedAt = 0;
+async function refreshCampPresence() {
+  if (presenceLoading || !document.getElementById('server-count')) return;
+  presenceLoading = true;
+  try {
+    const response = await fetch('/presence', {cache:'no-store',signal:AbortSignal.timeout(5000)});
+    if (!response.ok) throw new Error('presence unavailable');
+    const data = await response.json();
+    if (!Number.isSafeInteger(data.total) || data.total < 0) throw new Error('invalid presence');
+    serverCount.textContent = `전체 ${data.total}명 접속 중`;
+    presenceCheckedAt = Date.now();
+  } catch {
+    if (Date.now() - presenceCheckedAt > 20000) serverCount.textContent = '전체 인원 확인 중…';
+  } finally {presenceLoading = false;}
+}
+refreshCampPresence();
+setInterval(() => {if (!document.hidden) refreshCampPresence();}, 5000);
+document.addEventListener('visibilitychange', () => {if (!document.hidden) refreshCampPresence();});
 serverBtn.addEventListener('click', () => {
   nickInput.value = shownName() === '나' ? '' : shownName();
   document.getElementById('enter').textContent = '들어가기';
@@ -2817,6 +3080,13 @@ const HELD_ARM = { marshmallow: -1.35, ramen: -1.05, coffee: -1.05 };   // 들 �
 */
 // 매점 목록 — cat: food(손에 듦) | gear. place: 캠프에 놓는 장비. keep: 써도 안 없어짐(도구). dur: 들고 있는 초
 const ITEMS = {
+  rawmeat: {cat:'food',name:'바비큐용 생고기',icon:'🥩',ingredient:true,use:'그릴에서 구워 먹어요'},
+  soupkit: {cat:'food',name:'채소 수프 재료',icon:'🥕',ingredient:true,use:'냄비에 넣고 끓여요'},
+  noodles: {cat:'food',name:'봉지라면',icon:'🍜',ingredient:true,use:'냄비에 넣고 끓여요'},
+  barbecue: {cat:'cooked',name:'바비큐 구이',icon:'🍖',dur:6,use:'직접 구운 바비큐를 맛있게 먹어요'},
+  soup: {cat:'cooked',name:'따뜻한 채소 수프',icon:'🥣',dur:6,use:'따뜻한 수프를 떠먹어요'},
+  potramen: {cat:'cooked',name:'냄비 라면',icon:'🍜',dur:6,use:'직접 끓인 라면을 후루룩 먹어요'},
+  grilledsausage: {cat:'cooked',name:'그릴 소시지',icon:'🌭',dur:6,use:'노릇하게 구운 소시지를 먹어요'},
   marshmallow: { cat: 'food', name: '마시멜로', icon: '🍡', give: 3, dur: 14, use: '마시멜로를 굽고 있어요 — 불 가까이 가면 노릇노릇' },
   sausage: { cat: 'food', name: '소시지', icon: '🌭', give: 2, dur: 14, use: '소시지를 굽고 있어요 — 불 가까이 가면 지글지글' },
   sweetpotato: { cat: 'food', name: '군고구마', icon: '🍠', give: 2, dur: 12, use: '따끈한 군고구마' },
@@ -2845,8 +3115,8 @@ let placed = { lantern: 0, hammock: 0, relaxchair: 0, telescope: 0, cooler: 0, .
 const campInteract = [];   // 캠프에 놓은 장비 — { obj, onClick }
 const registerInteract = (obj, onClick) => campInteract.push({ obj, onClick });
 // (원본, 2026-10-30 송찬영 [AI]) const panels = ['shop-panel', 'bag-panel', 'map-panel'].map(id => document.getElementById(id));
-const panels = ['shop-panel', 'bag-panel', 'map-panel', 'season-panel'].map(id => document.getElementById(id));
-function openPanel(id) { panels.forEach(p => { p.hidden = p.id !== id; panelFolds.get(p).fold(false); }); if (id === 'shop-panel') renderShop(); if (id === 'bag-panel') renderBag(); if (id === 'map-panel') renderMapPanel(); }
+const panels = ['shop-panel', 'bag-panel', 'map-panel', 'season-panel','cooking-panel'].map(id => document.getElementById(id));
+function openPanel(id) { panels.forEach(p => { p.hidden = p.id !== id; panelFolds.get(p).fold(false); }); if (id === 'shop-panel') renderShop(); if (id === 'bag-panel') renderBag(); if (id === 'map-panel') renderMapPanel(); if(id==='cooking-panel') renderCooking(); }
 function closePanels() { panels.forEach(p => { p.hidden = true; }); }
 panels.forEach(p => p.querySelector('.panel-close').addEventListener('click', closePanels));
 
@@ -2856,24 +3126,36 @@ function makeFoldable(el, label) {   // label() — 내렸을 때 막대에 보�
   const b = document.createElement('button'); b.type = 'button'; b.className = 'fold';
   const sync = () => {
     const folded = el.classList.contains('folded');
-    b.textContent = folded ? `${label()} ▴` : '▾ 내리기';
+    b.textContent = el.id === 'camp-tools' ? folded ? '🔊 음량 조절 ▴' : '🔊 음량 접기 ▾' : folded ? `${label()} ▴` : '▾ 내리기';
     b.setAttribute('aria-expanded', String(!folded));
+    if(el.id==='chat')document.getElementById('btn-chat').setAttribute('aria-expanded',String(!folded));
     if (el.id === 'camp-tools') document.body.classList.toggle('tools-folded', folded);
+    requestAnimationFrame(layoutMobileChat);
   };
   b.addEventListener('click', () => { el.classList.toggle('folded'); sync(); });
   el.append(b);
   return { fold(on = true) { el.classList.toggle('folded', on); sync(); }, sync };
 }
 const campToolsEl = document.getElementById('camp-tools'), chatEl = document.getElementById('chat');
-const toolsFold = makeFoldable(campToolsEl, () => '🧰 캠프 도구');
-const chatFold = makeFoldable(chatEl, () => { const last = chatLog.lastElementChild?.textContent; return last ? `💬 ${last}` : '💬 채팅'; });
+function layoutMobileChat() {
+  const mobile=matchMedia('(pointer:coarse),(max-width:700px)').matches;
+  if(mobile){campToolsEl.style.top=`${Math.ceil(document.querySelector('.top').getBoundingClientRect().bottom+8)}px`;}else campToolsEl.style.removeProperty('top');
+  if(!mobile || chatEl.classList.contains('folded')){chatEl.style.removeProperty('bottom');return;}
+  chatEl.style.bottom=`${Math.ceil(window.innerHeight-document.querySelector('.dock').getBoundingClientRect().top+8)}px`;
+}
+new ResizeObserver(layoutMobileChat).observe(document.querySelector('.top'));
+window.addEventListener('resize',layoutMobileChat);
+
+const chatFold = makeFoldable(chatEl, () => { const last = chatLog.lastElementChild?.textContent; return last ? `💬 ${last}` : '💬 대화'; });
 const panelFolds = new Map(panels.map(p => [p, makeFoldable(p, () => '올리기')]));
-if (isMobile()) { toolsFold.fold(); chatFold.fold(); }   // 모바일은 처음부터 내려 둠
-new MutationObserver(() => chatFold.sync()).observe(chatLog, { childList: true });   // 내려 둔 채팅 막대에 새 말 보이기
-document.getElementById('chat-form').addEventListener('submit', () => {   // 말을 보내면 키보드를 닫고 채팅을 내림
-  if (!isMobile()) return;
-  chatInput.blur(); setTimeout(() => chatFold.fold(), 0);
+campToolsEl.classList.add('folded');
+chatFold.fold();
+document.getElementById('btn-chat').addEventListener('click',()=>{
+  const open=chatEl.classList.contains('folded');chatFold.fold(!open);
+  if(open&&!chatInput.disabled)chatInput.focus();
 });
+new MutationObserver(() => chatFold.sync()).observe(chatLog, { childList: true });   // 내려 둔 채팅 막대에 새 말 보이기
+// Keep the conversation and keyboard open until the camper explicitly folds it.
 window.addEventListener('keydown', e => { if (e.key === 'Escape') closePanels(); });
 function itemButton(id, sub, onClick) {
   const it = ITEMS[id], b = document.createElement('button');
@@ -2979,7 +3261,7 @@ function renderBag() {
   const ids = Object.keys(ITEMS).filter(id => bag[id] > 0);
   document.getElementById('bag-empty').hidden = ids.length > 0;
   // (원본, 2026-10-30 송찬영 [AI]) for (const id of ids) grid.append(itemButton(id, `${bag[id]}개 · 쓰기`, () => { useItem(id); renderBag(); }));
-  for (const id of ids) grid.append(itemButton(id, ITEMS[id].keep ? '쓰기' : `${bag[id]}개 · 쓰기`, () => { useItem(id); renderBag(); if (ITEMS[id].keep || ITEMS[id].place) closePanels(); }));
+  for (const id of ids) grid.append(itemButton(id, ITEMS[id].ingredient ? `${bag[id]}개 · 요리하기` : ITEMS[id].cat==='cooked' ? `${bag[id]}개 · 먹기` : ITEMS[id].keep ? '쓰기' : `${bag[id]}개 · 쓰기`, () => { useItem(id); renderBag(); if (ITEMS[id].keep || ITEMS[id].place) closePanels(); }));
 }
 function renderMapPanel() {
   const cv = document.getElementById('map-canvas');
@@ -2988,6 +3270,16 @@ function renderMapPanel() {
 setInterval(() => { if (!panels[2].hidden) renderMapPanel(); }, 500);   // 큰 지도 — 내 위치 갱신
 renderShop();
 document.getElementById('bag-btn').addEventListener('click', () => openPanel(panels[1].hidden ? 'bag-panel' : null));
+document.getElementById('go-store').addEventListener('click',()=>{
+  if(slideRide){toast('미끄럼틀에서 내린 뒤 매점으로 가 주세요.');return;}
+  const store=facilities.find(f=>f.group.userData.kind==='store');
+  if(!store){toast('매점을 준비하는 중이에요.');return;}
+  closePanels();if(mode!=='evening')setMode('evening');
+  if(me.position.distanceTo(store.front)<2){arriveFacility(store);return;}
+  startWalk(store.front);
+  if(walkTo){walkFacility=store;walkBoost=2;toast('매점으로 걸어가요. 도착하면 매점이 열립니다.');}
+});
+document.getElementById('change-season').addEventListener('click',()=>openPanel('season-panel'));
 function arriveFacility(f) {
   const kind = f.group.userData.kind;
   faceToward(f.group.position.x - me.position.x, f.group.position.z - me.position.z);
@@ -3102,6 +3394,15 @@ function steamPuffs(g, n = 3) {
   return parts;
 }
 function makeHeldProp2(id) {   // 새 물건들. 마시멜로·컵라면·커피는 원래 makeHeldProp
+  if (ITEMS[id]?.cat === 'cooked') {
+    const g = new THREE.Group();
+    const soup = id === 'soup' || id === 'potramen';
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(soup?.14:.2,soup?.095:.2,soup?.1:.025,20),stdMat(0xe9e2d5)));
+    const food = new THREE.Mesh(soup ? new THREE.CylinderGeometry(.125,.125,.01,20) : new THREE.BoxGeometry(.22,.05,.15),stdMat(soup?0xd5a03c:0x854425));
+    food.name='cooked-food';food.position.y=soup?.055:.04;g.add(food);
+    g.position.set(0,-.42,.08);
+    return {g,steamParts:steamPuffs(g,3)};
+  }
   if (id === 'marshmallow' || id === 'ramen' || id === 'coffee') return makeHeldProp(id);
   const g = new THREE.Group();
   let steamParts = [];
@@ -3167,7 +3468,7 @@ function stopActivity() {   // 자리를 뜨면 멈추는 것들
     const back = camera.position.clone().sub(controls.target).setY(0);
     if (back.lengthSq() < 0.01) back.set(0, 0, 1);
     back.normalize();
-    flyToView({ pos: tgt.clone().addScaledVector(back, 7).setY(3.6), target: tgt, maxPolar: mode === 'night' ? Math.PI * 0.85 : Math.PI * 0.495 });
+    flyToView({ pos: tgt.clone().addScaledVector(back, 9).setY(3.2), target: tgt, maxPolar: mode === 'night' ? Math.PI * 0.85 : Math.PI * 0.495 });
   }
 }
 const CHORDS = [[261.6, 329.6, 392.0, 523.3], [220.0, 261.6, 329.6, 440.0], [174.6, 220.0, 261.6, 349.2], [196.0, 246.9, 293.7, 392.0]];   // C Am F G
@@ -3187,9 +3488,15 @@ function updateHeld(dt, t) {
     s.position.set(Math.sin(t * 2 + i) * 0.02, 0.08 + k * 0.25, 0);
     s.material.opacity = 0.45 * (1 - k); s.scale.setScalar(0.6 + k * 1.2);
   });
+  if (ITEMS[held.id]?.cat === 'cooked') {
+    const remaining = Math.max(0,(held.until-t)/6);
+    const food = g.getObjectByName('cooked-food');if(food)food.scale.setScalar(Math.max(.05,remaining));
+    armL.rotation.x = -1.6 + Math.sin(t*3)*.18;
+    g.position.y = -.34 + Math.sin(t*3)*.06;
+  }
   if (STICK_FOOD.has(held.id)) {   // 불 가까이면 노릇노릇 · 지글지글
     const food = g.getObjectByName('mm');
-    held.cook = Math.min(1, (held.cook || 0) + (me.position.distanceTo(campCenter()) < 3.2 ? dt / 6 : 0));
+    held.cook = Math.min(1, (held.cook || 0) + (me.position.distanceTo(campCenter()) < 4.2 ? dt / 6 : 0));
     if (held.id === 'marshmallow') food.material.color.setRGB(1, 0.97 - held.cook * 0.35, 0.93 - held.cook * 0.6);
     else food.material.color.setRGB(0.75 - held.cook * 0.3, 0.38 - held.cook * 0.18, 0.29 - held.cook * 0.15);
   }
@@ -3259,7 +3566,7 @@ function placeRelaxChair() {   // 등받이가 많이 누운 의자 — seats �
   const seat = box(0.7, 0.05, 0.6, cloth, 0, 0.38, 0); seat.rotation.x = -0.15; g.add(seat);
   const back = box(0.7, 0.9, 0.05, cloth, 0, 0.78, -0.42); back.rotation.x = -0.55; g.add(back);
   for (const x of [-0.37, 0.37]) { g.add(box(0.04, 0.04, 0.7, frame, x, 0.55, -0.05)); g.add(box(0.04, 0.55, 0.04, frame, x, 0.27, 0.25)); g.add(box(0.04, 0.5, 0.04, frame, x, 0.25, -0.3)); }
-  g.position.copy(campSpot(3.4, -2.2));
+  g.position.copy(campSpot(4.8, -3.0));
   g.lookAt(fire.position.x, 0, fire.position.z);
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   fire.parent.add(g); campExtras.push(g);
@@ -3320,8 +3627,8 @@ for (const k of ['hammock', 'relaxchair', 'telescope', 'cooler']) if (placed[k])
 // 계절 장비 32가지 — 장비마다 정해진 자리. 불에서 가까운 빈 땅부터, 텐트·매트·다른 장비·길·물가는 피함
 const gearProps = [];
 const GEAR_SLOTS = (() => {
-  const busy = [[1.8, -2.4], [-0.6, 3.1], [-3.5, 2.9], [3.4, -2.2], [1.0, -3.7], [-1.6, -3.5]].map(([x, z]) => [campSpot(x, z), 1.7]);
-  busy.push([campTent.group.position, 3.6], [MAT_DIR.clone().multiplyScalar(3.85), 2.4]);
+  const busy = [[1.8, -2.4], [-0.6, 3.1], [-3.5, 2.9], [4.8, -3.0], [1.0, -3.7], [-1.6, -3.5]].map(([x, z]) => [campSpot(x, z), 1.7]);
+  busy.push([campTent.group.position, 3.6], [MAT_DIR.clone().multiplyScalar(5.8), 2.4]);
   for (const t of frontTrees) busy.push([t, 1.6]);   // 텐트 앞 숲
   const blocked = mapObjects.map(o => new THREE.Box3().setFromObject(o).expandByScalar(0.9));   // 데크·차·건물 바닥
   const road = ROAD_B.clone().sub(ROAD_A), roadLen = road.length(); road.divideScalar(roadLen);
@@ -3348,8 +3655,9 @@ function placeGear(id) {
   prop.group.lookAt(fire.position.x, 0, fire.position.z);   // 앞면이 모닥불 쪽
   fire.parent.add(prop.group); campExtras.push(prop.group); gearProps.push(prop);
   registerInteract(prop.group, () => {   // 누르면 앞까지 가서 사용
-    const front = slot.clone().addScaledVector(new THREE.Vector3(fire.position.x - slot.x, 0, fire.position.z - slot.z).normalize(), 1.1);
-    const use = () => { faceToward(slot.x - me.position.x, slot.z - me.position.z); toast(prop.interact()); };
+    const position = prop.group.getWorldPosition(new THREE.Vector3());
+    const front = position.clone().setY(0).addScaledVector(new THREE.Vector3(fire.position.x - position.x, 0, fire.position.z - position.z).normalize(), 1.1);
+    const use = () => { faceToward(position.x - me.position.x, position.z - me.position.z); if(['stove','pot','grill'].includes(id)) openPanel('cooking-panel'); else toast(prop.interact()); };
     startWalk(front);
     if (walkTo) afterArrive = use; else use();
   });
@@ -3381,11 +3689,10 @@ function startFishing() {
 function useItem(id) {
   if (!(bag[id] > 0)) return;
   const it = ITEMS[id];
-  if (it.cat === 'food') holdItem(id, it.dur);
+  if (it.ingredient) {openPanel('cooking-panel');return;}
+  if (it.cat === 'food' || it.cat === 'cooked') holdItem(id, it.dur);
   else if (id === 'firewood') {
-    sound.unlock();
-    fireLevel = Math.min(1, fireLevel + 0.35); addLog(true);
-    if (sound.ready) sound.whoosh();
+    sound.unlock();requestCampWood(true);return;
   } else if (id === 'guitar') {
     sound.unlock();
     if (pose === 'sit' && !walkTo) startGuitar();
@@ -3400,13 +3707,95 @@ function useItem(id) {
   } else if (it.place) {
     if (id === 'lantern' && placed.lantern >= 2) { toast('랜턴은 2개까지 걸 수 있어요'); return; }
     if (id !== 'lantern' && placed[id]) { toast(`${it.name}은(는) 이미 캠프에 있어요`); return; }
-    PLACE[id]();
+    if (PLACE[id]() === false) {toast('장비를 놓을 빈자리가 없어요.');return;}
     placed[id] = (placed[id] || 0) + 1; saveJson('camp-placed', placed);
   }
   if (!it.keep) { bag[id]--; if (bag[id] <= 0) delete bag[id]; }
   saveJson('camp-bag', bag);
   toast(it.use);
 }
+
+// Cooking reserves ingredients once; ready dishes stay until explicitly served.
+const cooking = createCooking({saved:loadJson('camp-cooking',{})});
+const cookingVisuals = new Map(), cookingReadyNotified = new Set();
+const cookingRows = new Map();
+const persistCooking = () => {saveJson('camp-cooking',cooking.save());saveJson('camp-bag',bag);};
+function focusCooking(station) {
+  const gear=gearProps.find(p=>p.group.userData.gearId===station);if(!gear)return;
+  if(morningInside)endMorningView();
+  if(mode!=='evening')setMode('evening');
+  const target=gear.group.getWorldPosition(new THREE.Vector3()).setY(.7);
+  camHold=true;
+  flyToView({pos:target.clone().add(new THREE.Vector3(1.8,2.5,4)),target,maxPolar:Math.PI*.495});
+}
+function syncCookingScene() {
+  const stove=gearProps.find(p=>p.group.userData.gearId==='stove');
+  const pot=gearProps.find(p=>p.group.userData.gearId==='pot');
+  if(stove&&pot&&cooking.status('stove')) {
+    stove.group.add(pot.group);pot.group.position.set(0,.25,0);pot.group.rotation.set(0,0,0);
+    if(!pot.cookingOpen){pot.interact();pot.cookingOpen=true;}
+  }
+  for(const station of ['stove','grill']) {
+    const gear=gearProps.find(p=>p.group.userData.gearId===station);if(!gear)continue;
+    if(!cookingVisuals.has(station)){const visual=createCookingVisual(THREE,station);gear.group.add(visual.group);cookingVisuals.set(station,visual);}
+    const active=Boolean(cooking.status(station));
+    if(active!==Boolean(gear.cookingOn)){gear.interact();gear.cookingOn=active;}
+  }
+}
+function cookingMessage(text) {document.getElementById('cooking-note').textContent=text;toast(text);}
+function serveCooking(station,eat) {
+  const result=cooking.serve(station,bag);if(!result.ok){cookingMessage(result.message);return;}
+  persistCooking();cookingReadyNotified.delete(station);syncCookingScene();
+  if(eat){useItem(result.item);closePanels();}else cookingMessage(`${ITEMS[result.item].name}를 가방에 담았어요.`);
+  renderCooking();
+}
+function renderCooking() {
+  const root=document.getElementById('cooking-cards');
+  if(!cookingRows.size)for(const [id,recipe] of Object.entries(RECIPES)) {
+    const card=document.createElement('section');card.className='cook-card';
+    const title=document.createElement('h3');title.textContent=`${recipe.station==='grill'?'🍖':'🍲'} ${recipe.name}`;
+    const status=document.createElement('p');const progress=document.createElement('progress');progress.max=1;
+    const actions=document.createElement('div');
+    const button=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',fn);actions.append(b);return b;};
+    const prepare=button('재료·장비 고르기',()=>{
+      for(const gear of recipe.gear)if(!placed[gear]&&!bag[gear])shopCart.select(gear);
+      if(!bag[recipe.ingredient])shopCart.select(recipe.ingredient);
+      shopTab='food';openPanel('shop-panel');cookingMessage('고른 재료와 장비를 「가방에 담기」로 가져오세요.');
+    });
+    const deploy=button('가방의 장비 놓기',()=>{
+      for(const gear of recipe.gear)if(!placed[gear]&&bag[gear]>0)useItem(gear);
+      openPanel('cooking-panel');
+    });
+    const start=button(recipe.action,()=>{
+      if(slideRide){cookingMessage('미끄럼틀에서 내린 뒤 요리해 주세요.');return;}
+      const result=cooking.start(id,bag,placed);cookingMessage(result.message);
+      if(result.ok){persistCooking();syncCookingScene();focusCooking(recipe.station);closePanels();}
+      renderCooking();
+    });
+    const eat=button('다 익었어요 · 먹기',()=>serveCooking(recipe.station,true));
+    const pack=button('가방에 담기',()=>serveCooking(recipe.station,false));
+    card.append(title,status,progress,actions);root.append(card);
+    cookingRows.set(id,{status,progress,prepare,deploy,start,eat,pack});
+  }
+  for(const [id,row] of cookingRows) {
+    const recipe=RECIPES[id],job=cooking.status(recipe.station),mine=job?.recipe===id;
+    const missing=recipe.gear.filter(gear=>!placed[gear]);
+    row.status.textContent=mine ? job.ready?'완성! 먹거나 가방에 담아 주세요.':`${job.remaining}초 뒤 완성 · ${recipe.station==='grill'?'지글지글 굽는 중':'보글보글 끓는 중'}` : `${recipe.gear.map(gear=>ITEMS[gear].name).join(' + ')} · ${ITEMS[recipe.ingredient].name} ${bag[recipe.ingredient]||0}개${missing.length?' · 장비를 먼저 놓아 주세요':''}`;
+    row.progress.hidden=!mine;row.progress.value=mine?job.progress:0;
+    row.prepare.hidden=Boolean(job);row.deploy.hidden=Boolean(job)||!missing.some(gear=>bag[gear]>0);
+    row.start.hidden=Boolean(job);row.start.disabled=missing.length>0||!(bag[recipe.ingredient]>0);
+    row.eat.hidden=row.pack.hidden=!mine;row.eat.disabled=row.pack.disabled=!job?.ready;
+  }
+}
+document.getElementById('cook-btn').addEventListener('click',()=>openPanel('cooking-panel'));
+setInterval(()=>{
+  for(const station of ['stove','grill']){
+    const job=cooking.status(station);
+    if(job?.ready&&!cookingReadyNotified.has(station)){cookingReadyNotified.add(station);cookingMessage(`${job.name} 완성! 「요리하기」에서 먹을 수 있어요.`);}
+  }
+  if(!document.getElementById('cooking-panel').hidden)renderCooking();
+},500);
+syncCookingScene();
 
 // ---------- 계절 테마 — 봄 벚꽃 · 여름 숲과 해수욕 · 가을 단풍 · 겨울 눈 ----------
 const SEASONS = {
@@ -3479,7 +3868,7 @@ const SEASON_SKY = {
 const seasonPreset = m => presetState({ ...PRESETS[m], ...(SEASON_SKY[seasonKey]?.[m] || {}) });
 // 계절 옷 — 여름 반팔(맨팔) · 겨울 경량패딩(남색 누빔, 긴바지) · 봄가을 후드+조끼
 function applyOutfit(key) {
-  setTimeout(() => { for (const r of remotes.values()) copyLook(r.g); });   // 다른 사람도 같은 계절 옷 (내 화면 기준)
+  setTimeout(() => { for (const r of remotes.values()) {copyLook(r.g);applyAvatarStyle(r.g,r.g.userData.appearance??r.id);} });
   const o = outfit, winter = key === 'winter', summer = key === 'summer';
   o.hoodie.color.set(winter ? 0x2f3a56 : 0xf2efe8);
   o.vestMesh.visible = !winter && !summer;
@@ -3494,6 +3883,7 @@ function applyOutfit(key) {
     sl.position.y = summer ? -0.09 : -0.17;
     fo.visible = summer;
   }
+  if(me.userData.ownsStyleMaterials)applyAvatarStyle(me,me.userData.appearance);
 }
 function recolorTrees(key) {   // 아래 원뿔(a)·위 원뿔(b) 색
   const { a, b, n, r } = treeLeaves;
@@ -3716,8 +4106,8 @@ function fireFocusView() {
   const dir = camera.position.clone().sub(f).setY(0);
   if (dir.lengthSq() < 0.01) dir.set(0, 0, 1);
   dir.normalize();
-  return {pos: f.clone().addScaledVector(dir, 1.95).add(new THREE.Vector3(0, 1.05, 0)),
-    target: f.clone().add(new THREE.Vector3(0, 0.48, 0)), maxPolar: Math.PI * 0.495, closeFire: true};
+  return {pos: f.clone().addScaledVector(dir, FIRE_FOCUS.distance).add(new THREE.Vector3(0, FIRE_FOCUS.height, 0)),
+    target: f.clone().add(new THREE.Vector3(0, FIRE_FOCUS.targetHeight, 0)), maxPolar: Math.PI * 0.495, closeFire: true};
 }
 document.getElementById('btn-fire').addEventListener('click', () => {
   sound.unlock();
@@ -3725,11 +4115,7 @@ document.getElementById('btn-fire').addEventListener('click', () => {
   flyToView(fireFocusView());
 });
 document.getElementById('add-log').addEventListener('click', () => {
-  sound.unlock(); addLog(true);
-  fireLevel = Math.min(1, fireLevel + .28);
-  emitFireCrackle(.8);
-  if (sound.ready) sound.whoosh();
-  toast('장작을 하나 더 넣었어요');
+  sound.unlock();requestCampWood();
 });
 
 
@@ -3779,10 +4165,13 @@ renderer.setAnimationLoop(() => {
   controls.update();
 
   // 불
-  fireLevel = Math.max(0.15, fireLevel - dt * 0.0012);
+  fireLevel = Math.max(0.35, fireLevel - dt * 0.0012);
+  const surge=fireSurge(t-woodAddedAt);
   const flicker = 0.88 + Math.sin(t * 5.1) * 0.055 + Math.sin(t * 11.7) * 0.035 + Math.sin(t * 2.3) * 0.04;
-  visualFireLevel += (fireLevel - visualFireLevel) * (1 - Math.exp(-dt * 1.3));
+  visualFireLevel += (Math.min(1,fireLevel+surge*.45) - visualFireLevel) * (1 - Math.exp(-dt * 3));
+  naturalFire.group.scale.set(1+surge*.25,1+surge*.5,1+surge*.25);
   naturalFire.update(t, visualFireLevel, camera);
+  for(const area of otherAreaScenes.values())area.update(t,camera);
   crackleFlash = Math.max(0, crackleFlash - dt * 2.5);
   if (t >= nextCrackleAt) {
     const strength = 0.45 + fireLevel * 0.55;
@@ -3793,7 +4182,7 @@ renderer.setAnimationLoop(() => {
   coals.forEach((coal, i) => {
     coal.material.emissiveIntensity = (0.45 + fireLevel * 0.9) * (0.8 + Math.sin(t * 1.7 + i * 2.3) * 0.2);
   });
-  fireLight.intensity = (6 + 34 * visualFireLevel) * flicker;
+  fireLight.intensity = (6 + 34 * visualFireLevel) * flicker * (1+surge*.7);
   for (const log of logs) {
     log.userData.burnAge += dt;
     log.userData.crackle = Math.max(0, (log.userData.crackle || 0) - dt * 3.5);
@@ -3803,7 +4192,7 @@ renderer.setAnimationLoop(() => {
       log.position.y = log.userData.landY + log.userData.dropFrom;
     }
   }
-  const sparkTop = 1.2 + fireLevel * 1.6;
+  const sparkTop = 2 + fireLevel * 2 + surge;
   for (let i = 0; i < sparkCount; i++) {
     sparkPos[i * 3 + 1] += sparkVel[i] * dt * (0.6 + fireLevel);
     sparkPos[i * 3] += Math.sin(t * 2 + i) * dt * 0.15;
@@ -3849,6 +4238,18 @@ renderer.setAnimationLoop(() => {
     const step = followStep.subVectors(want, controls.target).multiplyScalar(1 - Math.exp(-dt * 2.5));
     controls.target.add(step);
     camera.position.add(step);
+    if (performance.now() > cameraManualUntil && (walkTo || walkingFrame)) {
+      walkingFrame = true;
+      const offset = camera.position.clone().sub(controls.target);
+      const horizontal = Math.max(.01, Math.hypot(offset.x,offset.z));
+      const wantedRadius = walkTo ? 15 : 9, wantedHeight = walkTo ? 7 : 2.2;
+      const blend = 1 - Math.exp(-dt * 1.6);
+      const radius = THREE.MathUtils.lerp(horizontal,wantedRadius,blend);
+      offset.x *= radius/horizontal; offset.z *= radius/horizontal;
+      offset.y = THREE.MathUtils.lerp(offset.y,wantedHeight,blend);
+      camera.position.copy(controls.target).add(offset);
+      if (!walkTo && Math.abs(radius-9)<.05 && Math.abs(offset.y-2.2)<.05) walkingFrame=false;
+    }
   }
   const camR = Math.hypot(camera.position.x, camera.position.z);
   // (원본, 2026-10-30 송찬영 [AI]) if (camR > CAM_MAX_R) { camera.position.x *= CAM_MAX_R / camR; camera.position.z *= CAM_MAX_R / camR; }
@@ -3887,6 +4288,13 @@ renderer.setAnimationLoop(() => {
   }
   updateFall(dt, t);
   placeTag(myTag, me);   // 머리 위 닉네임
+  speechBubbles.update(t,id=>{
+    const who=id===myId?me:remotes.get(id)?.g;
+    if(!who || !who.visible)return null;
+    const p=who.localToWorld(new THREE.Vector3(0,2.55,0));
+    p.y=Math.max(p.y,1.4);p.project(camera);
+    return {visible:p.z>-1&&p.z<1&&Math.abs(p.x)<1.15&&Math.abs(p.y)<1.15,x:(p.x+1)*window.innerWidth/2,y:(1-p.y)*window.innerHeight/2};
+  },window.innerWidth);
   presenceTick(dt, t);   // 다른 사람 · 내 상태 보내기
   updateHeld(dt, t);     // 손에 든 것 (매점 물건)
 
@@ -3917,8 +4325,12 @@ renderer.setAnimationLoop(() => {
   aurora.update(t, cur.stars, camera);
   campTent.update(t, mode === 'morning' ? .8 : .3);
   for (const g of gearProps) g.update(t);   // 선풍기 날개 · 깃발 · 풍향계
+  for (const [station,visual] of cookingVisuals) visual.update(cooking.status(station),t);
   renderer.render(scene, camera);
 });
 </script>
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"7946354a279b4be39ae812950672b691"}'></script>
+<!-- End Cloudflare Web Analytics -->
 </body>
 </html>

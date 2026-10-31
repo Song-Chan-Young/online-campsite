@@ -49,3 +49,9 @@ test('cloud stats await all three room responses and combine aggregate counts',a
   assert.deepEqual((await response.json()).rooms,{'1':{entries:1},'2':{entries:2},'3':{entries:3}});
   assert.deepEqual(names,['camp-1','camp-2','camp-3']);
 });
+
+test('watch handshake waits for an updated room without joining a visitor on old code',async()=>{
+ let calls=[];const env={CAMPS:{getByName:()=>({fetch:request=>{calls.push(new URL(request.url).pathname);return new Response('',{status:426});}})}};
+ const response=await worker.fetch(new Request('https://camp.example/watch?server=2',{headers:{Upgrade:'websocket'}}),env);
+ assert.equal(response.status,503);assert.deepEqual(calls,['/capabilities']);
+});

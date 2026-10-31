@@ -53,6 +53,10 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (urlPath === '/presence') {
+    res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}).end(JSON.stringify(hub.getPresence()));
+    return;
+  }
   if (urlPath === '/stats') {
     res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}).end(JSON.stringify(hub.getMetrics()));
     return;
@@ -111,11 +115,13 @@ function saveMetrics() {
     await writeFile(metricsFile + '.tmp', json); await rename(metricsFile + '.tmp', metricsFile);
   }).catch(() => console.error('Aggregate metrics could not be saved.'));
 }
-const wss = new WebSocketServer({ server, path: '/chat', maxPayload: 4 * 1024 });
+const wss = new WebSocketServer({noServer:true,maxPayload:4*1024});
+server.on('upgrade',(req,socket,head)=>{const url=new URL(req.url,'http://localhost');if(!['/chat','/watch'].includes(url.pathname)){socket.destroy();return;}if(url.pathname==='/watch'){url.searchParams.set('watch','1');req.url=url.pathname+url.search;}wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws,req));});
 wss.on('connection', (ws, req) => {
   const params = new URL(req.url, 'http://localhost').searchParams;
   ws.isAlive = true;
-  hub.join(ws, {room: params.get('server'), visitor: params.get('visitor'), near: params.get('near'), quiet: params.get('quiet') !== '0'});
+  if(new URL(req.url,'http://localhost').searchParams.get('watch')==='1')hub.watch(ws,{room:params.get('server')});
+  else hub.join(ws, {room: params.get('server'), visitor: params.get('visitor'), near: params.get('near'), quiet: params.get('quiet') !== '0'});
   ws.on('pong', () => { ws.isAlive = true; });
   ws.on('message', (data, binary) => {
     const before = hub.metricsRevision;

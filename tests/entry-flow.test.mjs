@@ -12,7 +12,7 @@ function entryPage(address, room, storage) {
   const elements = {'enter-form':{addEventListener(event, fn) {submit=fn;}}, 'enter-screen':screen, 'nick-input':input, 'nick-btn':{}};
   const location = {href:address,protocol:new URL(address).protocol};
   const context = vm.createContext({
-    document: {getElementById: id => elements[id], querySelector: () => ({value:'3'})},
+    document: {getElementById: id => elements[id], querySelector: () => ({value:'3'}),addEventListener(){}},
     SERVER:room, SERVERS:{1:{name:'서버1'},3:{name:'서버3'}}, location,
     history:{replaceState(state, title, url) {location.href=url;}},
     localStorage:{getItem:key=>storage.get(key), setItem:(key,value)=>storage.set(key,value)},

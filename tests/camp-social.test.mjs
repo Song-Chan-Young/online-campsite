@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {inviteAddress, photoCaption} from '../public/camp-social.mjs';
 
+test('receiving a greeting shows the sender wave but never replies automatically',async()=>{
+  const {readFile}=await import('node:fs/promises');const vm=await import('node:vm');
+  const source=await readFile(new URL('../public/index.html',import.meta.url),'utf8');
+  const handler=source.slice(source.indexOf('function onPresence(m)'),source.indexOf('const _rp ='));
+  let replies=0,waves=0,message;
+  const remote={name:'친구',g:{position:{x:1,z:0}},tyaw:0};
+  const context=vm.createContext({quietMode:false,myId:7,remotes:new Map([[8,remote]]),clock:{elapsedTime:10},me:{position:{x:0,z:0}},
+    toast:text=>message=text,waveAt:()=>waves++,sendAct:()=>replies++});
+  vm.runInContext(handler,context);
+  assert.equal(context.onPresence({type:'act',act:'hello',id:8,to:7}),true);
+  assert.match(message,/친구님이 인사했어요/);assert.equal(remote.waveUntil,12.2);
+  assert.equal(replies,0);assert.equal(waves,0);
+});
+
 test('an invitation stays in the current room but never carries another inviter or entry marker',()=>{
   const url=new URL(inviteAddress('https://camp.example/?server=2&enter=1&near=old-host#test',3,'my-visitor-token'));
   assert.equal(url.origin,'https://camp.example');
