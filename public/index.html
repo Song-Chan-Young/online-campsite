@@ -3726,6 +3726,7 @@ function placeGear(id) {
   prop.group.position.copy(slot);
   prop.group.lookAt(fire.position.x, 0, fire.position.z);   // 앞면이 모닥불 쪽
   fire.parent.add(prop.group); campExtras.push(prop.group); gearProps.push(prop);
+  if (id === 'tarp') prop.group.visible = seasonKey === 'rain';   // 타프는 비 올 때만
   registerInteract(prop.group, () => {   // 누르면 앞까지 가서 사용
     const position = prop.group.getWorldPosition(new THREE.Vector3());
     const front = position.clone().setY(0).addScaledVector(new THREE.Vector3(fire.position.x - position.x, 0, fire.position.z - position.z).normalize(), 1.1);
@@ -4156,6 +4157,7 @@ function applySeason(key, announce = false) {
   applyOutfit(key);                                      // 여름 반팔 · 겨울 경량패딩
   setupFall(S.fall);
   for(const tarp of rainShelters)tarp.setSeason(key);
+  for(const g of gearProps)if(g.group.userData.gearId==='tarp')g.group.visible=key==='rain';   // 상점 타프도 비 올 때만
   rain.setEnabled(key === 'rain');
   if(sound.ctx){if(key==='rain')sound.rainRecording?.play('rain');else sound.rainRecording?.stop();}
   rain.update(0, camera.position,rainShelters);
