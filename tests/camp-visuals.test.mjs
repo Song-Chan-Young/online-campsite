@@ -42,3 +42,22 @@ test('holding a marshmallow is shared, restored for new arrivals and cleared saf
  hub.message(a,JSON.stringify({...state,held:'unknown'}));assert.equal(hub.peer(a).held,null);
  hub.message(a,JSON.stringify({...state,held:'marshmallow',pose:'lie',spot:null}));assert.equal(hub.peer(a).held,null);
 });
+
+import {createFoodSkewer} from '../public/camp-skewer.mjs';
+test('sweet potato and barbecue have large recognizable food on forward skewers',()=>{
+ for(const id of ['sweetpotato','barbecue']){
+  const prop=createFoodSkewer(T,id),arm=new T.Group();arm.rotation.x=-1.35;arm.add(prop.g);arm.updateMatrixWorld(true);
+  const food=prop.g.getObjectByName('mm');assert.ok(food);
+  const size=new T.Box3().setFromObject(food).getSize(new T.Vector3());
+  assert.ok(size.x>.2);assert.ok(food.getWorldPosition(new T.Vector3()).z>1.2);
+  prop.g.traverse(o=>{if(o.isMesh)for(const n of o.geometry.attributes.position.array)assert.ok(Number.isFinite(n));});
+ }
+});
+test('sweet potato and barbecue skewers are visible to other campers',()=>{
+ for(const held of ['sweetpotato','barbecue']){
+  const hub=new CampHub(),a={send(){}},b={messages:[],send(raw){this.messages.push(JSON.parse(raw));}};
+  hub.join(a,{room:'1'});hub.join(b,{room:'1'});
+  hub.message(a,JSON.stringify({type:'state',x:3,z:2,yaw:0,pose:'sit',spot:a.spot,held}));
+  assert.equal(b.messages.at(-1).held,held);
+ }
+});

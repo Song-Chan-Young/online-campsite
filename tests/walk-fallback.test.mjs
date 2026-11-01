@@ -11,7 +11,7 @@ function walker(taken) {
   const seats = [0,1,2,3].map(i => { const seat = new THREE.Group(); seat.position.x = i * 2; parent.add(seat); return seat; });
   const messages = [];
   const context = vm.createContext({
-    THREE, held:null, SERVER:1,safePosition,campRoute,safeWorldPosition,worldRoute,walkWaypoints:[], seats, me:new THREE.Group(), pose:'stand', walkTo:null, walkSeat:null, walkLie:false,
+    THREE, SKEWER_FOODS:new Set(), held:null, SERVER:1,safePosition,campRoute,safeWorldPosition,worldRoute,walkWaypoints:[], seats, me:new THREE.Group(), pose:'stand', walkTo:null, walkSeat:null, walkLie:false,
     walkFacility:null, afterArrive:null, walkBoost:1, currentSpot:null, lieSpot:'mat', myId:1, slideRide:null,
     remotes:new Map(taken.map((spot,i) => [i+2,{spot}])), occupiedSpots:new Set(),
     walkable:()=>true, stopActivity(){}, toast(){}, WebSocket:{OPEN:1},

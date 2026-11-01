@@ -321,6 +321,8 @@
 
   .dock {width:min(480px,calc(100vw - 16px));}
   .dock button {white-space:nowrap;}
+
+  #bag-panel {top:50%;bottom:auto;transform:translate(-50%,-50%);max-height:calc(100dvh - 32px);}
 </style>
 <!-- (원본, 2026-10-30 송찬영 [AI]) CDN — 서버(server.mjs)가 node_modules/three 를 /vendor/three/ 로 직접 줌
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -404,9 +406,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-3.5 2-5 .8 1.5 1.5 2 2.5 2 0-2.5-1-4.5.5-7Z"/><path d="M4 21l16-3M20 21L4 18"/></svg>
     불멍
   </button>
-  <button id="btn-hello" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-6.5a1.5 1.5 0 0 1 3 0V11m0-5a1.5 1.5 0 0 1 3 0v7c0 4-2.5 7-6.5 7-3 0-4.5-1.5-6-4l-1.8-3a1.5 1.5 0 0 1 2.6-1.5L8 13"/></svg>
-    인사
+  <button id="btn-cook" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h14v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4ZM3 10h18M2 13h3m14 0h3M8 7c-2-2 2-3 0-5m5 5c-2-2 2-3 0-5m5 5c-2-2 2-3 0-5"/></svg>
+    요리
   </button>
   <button id="btn-stars" type="button" aria-pressed="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4Z"/><path d="M18 15l.7 1.8 1.8.7-1.8.7L18 20l-.7-1.8-1.8-.7 1.8-.7ZM5 16l.5 1.2 1.2.5-1.2.5L5 19.4l-.5-1.2-1.2-.5 1.2-.5Z"/></svg>
@@ -440,7 +442,6 @@
 </div>
 <div class="panel pill" id="bag-panel" hidden role="dialog" aria-label="가방">
   <h2>가방</h2>
-  <button id="cook-btn" class="cook-entry" type="button">🍲 요리하기</button>
   <p class="panel-sub" id="bag-empty">비어 있어요 — 매점에서 가져오세요</p>
   <div class="item-grid" id="bag-items"></div>
   <button class="panel-close" type="button">닫기</button>
@@ -508,7 +509,7 @@ import {safePosition,camperPosition,campRoute,safeWorldPosition,worldRoute} from
 import { CAMP_SEATS, FIRE_SCALE, fireSurge } from './camp-circle.mjs';
 import { createSpeechBubbles } from './speech-bubbles.mjs';
 import { QUICK_PHRASES } from './quick-chat.mjs';
-import {createMarshmallowSkewer} from './camp-skewer.mjs';
+import {createMarshmallowSkewer,createFoodSkewer,SKEWER_FOODS} from './camp-skewer.mjs';
 import { createCampingChair } from './camp-chair.mjs';
 import { applyAvatarStyle } from './avatar-style.mjs';
 import { EXTRA_GEAR, recommendedGearIds, createGearProp } from './camp-catalog.mjs';
@@ -2855,12 +2856,12 @@ function freeChair() { return seats.find((seat, i) => !spotIsTaken(`seat:${i}`))
 function sendPresenceNow() {
   if (!chatWs || chatWs.readyState !== WebSocket.OPEN || myId === null) return;
   chatWs.send(JSON.stringify({ type: 'state', x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2),
-    yaw: +me.rotation.y.toFixed(2), pose, lieSpot, held: held?.id === 'marshmallow' && pose !== 'lie' ? 'marshmallow' : null, spot: currentSpot }));
+    yaw: +me.rotation.y.toFixed(2), pose, lieSpot, held: SKEWER_FOODS.has(held?.id) && pose !== 'lie' ? held.id : null, spot: currentSpot }));
 }
 function presenceTick(dt, t) {
   // 내 상태 보내기 — 바뀌면 0.1초마다, 그대로면 30초마다
   if (chatWs && chatWs.readyState === WebSocket.OPEN && myId !== null) {
-    const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot, held: held?.id === 'marshmallow' && pose !== 'lie' ? 'marshmallow' : null, spot: currentSpot };
+    const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot, held: SKEWER_FOODS.has(held?.id) && pose !== 'lie' ? held.id : null, spot: currentSpot };
     const key = JSON.stringify(s);
     if ((key !== lastSent && t - lastSentAt > 0.1) || t - lastSentAt > 30) {
       chatWs.send(JSON.stringify({ type: 'state', ...s })); lastSent = key; lastSentAt = t;
@@ -2883,12 +2884,15 @@ function presenceTick(dt, t) {
     r.hips.forEach((h, i) => { if (h) h.rotation.x = -Math.PI / 2 * r.sit + (i ? -sw : sw) - (i === 0 ? 0.7 * r.lie : 0); });
     r.knees.forEach((k, i) => { if (k) k.rotation.x = Math.PI / 2 * r.sit + (i === 0 ? 1.3 * r.lie : 0); });
     if(r.armL) {
-      const holding=r.held==='marshmallow' && r.pose!=='lie';
-      if(holding && !r.skewer){r.skewer=createMarshmallowSkewer(THREE).g;r.armL.add(r.skewer);}
+      const holding=SKEWER_FOODS.has(r.held) && r.pose!=='lie';
+      if(holding && r.skewer?.userData.foodId!==r.held){
+        if(r.skewer){r.armL.remove(r.skewer);r.skewer.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}
+        r.skewer=createFoodSkewer(THREE,r.held).g;r.skewer.userData.foodId=r.held;r.armL.add(r.skewer);
+      }
       if(r.skewer)r.skewer.visible=holding;
       const book=r.armL.getObjectByName('book');if(book)book.visible=!holding;
     }
-    if (r.armL) r.armL.rotation.x += ((r.pose === 'lie' ? 2.8 : r.held==='marshmallow' ? -1.35 : moving ? sw * 0.8 : -0.6) - r.armL.rotation.x) * Math.min(1, dt * 6);
+    if (r.armL) r.armL.rotation.x += ((r.pose === 'lie' ? 2.8 : SKEWER_FOODS.has(r.held) ? -1.35 : moving ? sw * 0.8 : -0.6) - r.armL.rotation.x) * Math.min(1, dt * 6);
     if (r.armR) {
       if (t < r.waveUntil) { r.armR.rotation.x = -0.2; r.armR.rotation.z = -2.5 + Math.sin(t * 12) * 0.35; }
       else { r.armR.rotation.x += ((r.pose === 'lie' ? 2.8 : moving ? -sw * 0.8 : -0.6) - r.armR.rotation.x) * Math.min(1, dt * 6); r.armR.rotation.z += (0 - r.armR.rotation.z) * Math.min(1, dt * 6); }
@@ -3161,8 +3165,8 @@ const ITEMS = {
   drink: { cat: 'hidden', name: '시원한 음료', icon: '🥤', give: 0, dur: 12, use: '시원한 음료 한 모금' },   // 아이스박스에서만
 };
 Object.assign(ITEMS, EXTRA_GEAR);   // 계절별 캠핑 장비 32가지 — 놓으면 3D 모델, 누르면 동작
-const HELD_ARM = { marshmallow: -1.35, sausage: -1.35, sweetpotato: -1.0, ramen: -1.05, coffee: -1.05, hotchoco: -1.05, watermelon: -1.1, drink: -1.05, rod: -1.25, guitar: -0.9 };   // 들 때 팔 각도
-const STICK_FOOD = new Set(['marshmallow', 'sausage']);   // 꼬치 — 불 가까이면 익음
+const HELD_ARM = { marshmallow: -1.35, sausage: -1.35, sweetpotato: -1.35, barbecue: -1.35, ramen: -1.05, coffee: -1.05, hotchoco: -1.05, watermelon: -1.1, drink: -1.05, rod: -1.25, guitar: -0.9 };   // 들 때 팔 각도
+const STICK_FOOD = new Set([...SKEWER_FOODS, 'sausage']);   // 꼬치 — 불 가까이면 익음
 const loadJson = (key, def) => { try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; } };
 const saveJson = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} };
 let bag = loadJson('camp-bag', {});
@@ -3317,7 +3321,7 @@ function renderBag() {
   const ids = Object.keys(ITEMS).filter(id => bag[id] > 0);
   document.getElementById('bag-empty').hidden = ids.length > 0;
   // (원본, 2026-10-30 송찬영 [AI]) for (const id of ids) grid.append(itemButton(id, `${bag[id]}개 · 쓰기`, () => { useItem(id); renderBag(); }));
-  for (const id of ids) grid.append(itemButton(id, ITEMS[id].ingredient ? `${bag[id]}개 · 요리하기` : ITEMS[id].cat==='cooked' ? `${bag[id]}개 · 먹기` : ITEMS[id].keep ? '쓰기' : `${bag[id]}개 · 쓰기`, () => { useItem(id); renderBag(); if (ITEMS[id].keep || ITEMS[id].place) closePanels(); }));
+  for (const id of ids) grid.append(itemButton(id, ITEMS[id].ingredient ? `${bag[id]}개 · 요리하기` : ITEMS[id].cat==='cooked' ? `${bag[id]}개 · 먹기` : ITEMS[id].keep ? '쓰기' : `${bag[id]}개 · 쓰기`, () => { useItem(id); renderBag(); if (!ITEMS[id].ingredient) closePanels(); }));
 }
 function renderMapPanel() {
   const cv = document.getElementById('map-canvas');
@@ -3446,7 +3450,8 @@ function steamPuffs(g, n = 3) {
   }
   return parts;
 }
-function makeHeldProp2(id) {   // 새 물건들. 마시멜로·컵라면·커피는 원래 makeHeldProp
+function makeHeldProp2(id) {
+  if(SKEWER_FOODS.has(id))return createFoodSkewer(THREE,id);   // 새 물건들. 마시멜로·컵라면·커피는 원래 makeHeldProp
   if (ITEMS[id]?.cat === 'cooked') {
     const g = new THREE.Group();
     const soup = id === 'soup' || id === 'potramen';
@@ -3508,9 +3513,12 @@ function stopHeld() {
 function holdItem(id, dur) {
   stopHeld();
   const prop = makeHeldProp2(id);
+  if(!SKEWER_FOODS.has(id) && (ITEMS[id]?.cat==='food'||ITEMS[id]?.cat==='cooked')) {
+    prop.g.scale.setScalar(id==='sausage'?1.5:2.5);
+  }
   armL.add(prop.g);
   held = { id, until: clock.elapsedTime + dur, prop };
-  document.getElementById('put-skewer').hidden=id!=='marshmallow';
+  document.getElementById('put-skewer').hidden=!SKEWER_FOODS.has(id);
   sendPresenceNow();
 }
 function stopActivity() {   // 자리를 뜨면 멈추는 것들
@@ -3545,13 +3553,13 @@ function updateHeld(dt, t) {
     s.position.set(Math.sin(t * 2 + i) * 0.02, 0.08 + k * 0.25, 0);
     s.material.opacity = 0.45 * (1 - k); s.scale.setScalar(0.6 + k * 1.2);
   });
-  if (ITEMS[held.id]?.cat === 'cooked') {
+  if (ITEMS[held.id]?.cat === 'cooked' && !SKEWER_FOODS.has(held.id)) {
     const remaining = Math.max(0,(held.until-t)/6);
     const food = g.getObjectByName('cooked-food');if(food)food.scale.setScalar(Math.max(.05,remaining));
     armL.rotation.x = -1.6 + Math.sin(t*3)*.18;
     g.position.y = -.34 + Math.sin(t*3)*.06;
   }
-  if (STICK_FOOD.has(held.id)) {   // 불 가까이면 노릇노릇 · 지글지글
+  if (held.id==='marshmallow'||held.id==='sausage') {   // 불 가까이면 노릇노릇 · 지글지글
     const food = g.getObjectByName('mm');
     held.cook = Math.min(1, (held.cook || 0) + (me.position.distanceTo(campCenter()) < 4.2 ? dt / 6 : 0));
     if (held.id === 'marshmallow') food.material.color.setRGB(1, 0.97 - held.cook * 0.35, 0.93 - held.cook * 0.6);
@@ -3754,7 +3762,7 @@ function useItem(id) {
   if (!(bag[id] > 0)) return;
   const it = ITEMS[id];
   if (it.ingredient) {openPanel('cooking-panel');return;}
-  if (it.cat === 'food' || it.cat === 'cooked') holdItem(id, id === 'marshmallow' ? Infinity : it.dur);
+  if (it.cat === 'food' || it.cat === 'cooked') holdItem(id, SKEWER_FOODS.has(id) ? Infinity : it.dur);
   else if (id === 'firewood') {
     sound.unlock();requestCampWood(true);return;
   } else if (id === 'guitar') {
@@ -3851,7 +3859,7 @@ function renderCooking() {
     row.eat.hidden=row.pack.hidden=!mine;row.eat.disabled=row.pack.disabled=!job?.ready;
   }
 }
-document.getElementById('cook-btn').addEventListener('click',()=>openPanel('cooking-panel'));
+document.getElementById('btn-cook').addEventListener('click',()=>openPanel('cooking-panel'));
 setInterval(()=>{
   for(const station of ['stove','grill']){
     const job=cooking.status(station);
@@ -4196,21 +4204,6 @@ document.getElementById('add-log').addEventListener('click', () => {
 
 
 let waveUntil = 0;
-// (원본, 2026-10-30 송찬영 [AI]) 인사 — 혼자 손 흔들기. 「사람끼리 서로 인사」 요청으로 교체
-// document.getElementById('btn-hello').addEventListener('click', () => {
-//   sound.unlock();
-//   waveUntil = clock.elapsedTime + 2.2;
-//   toast('숲에 인사했어요');
-// });
-document.getElementById('btn-hello').addEventListener('click', () => {
-  sound.unlock();
-  if (quietMode) { toast('말 걸어도 좋아요로 바꾸면 인사할 수 있어요'); return; }
-  const r = [...remotes.values()].filter(r => !r.quiet && Math.hypot(r.tx - me.position.x, r.tz - me.position.z) < 6).sort((a, b) => Math.hypot(a.tx - me.position.x, a.tz - me.position.z) - Math.hypot(b.tx - me.position.x, b.tz - me.position.z))[0];
-  if (!r) { toast('근처에 인사할 사람이 없어요'); return; }
-  waveAt(r);
-  sendAct({ act: 'hello', to: r.id });
-  toast(`${r.name}님에게 인사했어요 👋`);
-});
 
 btnStars.addEventListener('click', () => {
   sound.unlock();
