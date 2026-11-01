@@ -13,7 +13,7 @@ assert.ok(start >= 0 && end > start, 'camera section must be present');
 const cameraSource = source.slice(start, end);
 
 function setup(server = 1) {
-  const nodes = new Map(['wake-shade', 'add-log','view-overview','view-store','view-home'].map(id => [id, {hidden: true, style: {},setAttribute(){}}]));
+  const nodes = new Map(['enter-tent','wake-shade', 'add-log','view-overview','view-store','view-home'].map(id => [id, {hidden: true, style: {},setAttribute(){}}]));
   const group = new THREE.Group();
   group.position.set(-4.3, 0.15, -3.2); group.lookAt(0, 0.15, 0);
   group.visible = server !== 2;
@@ -24,7 +24,7 @@ function setup(server = 1) {
   const controls = {target: new THREE.Vector3(0, 1, 0), enabled: true, minDistance: 3, maxPolarAngle: Math.PI * 0.495,addEventListener(){}};
   const me = new THREE.Group(), myTag = new THREE.Group(), renderer = {domElement: {style: {filter: ''}}};
   const context = vm.createContext({THREE, SERVER: server, camera, controls, me, myTag, renderer,
-    spotIsTaken:()=>false,toast(){},stopActivity(){},sendPresenceNow(){},faceToward(){},walkTo:null,walkWaypoints:[],walkSeat:null,walkLie:false,afterArrive:null,walkFacility:null,pose:'sit',lieSpot:'mat',currentSpot:'seat:0',
+    goSeat(){context.pose="sit";context.currentSpot="seat:0";},spotIsTaken:()=>false,toast(){},stopActivity(){},sendPresenceNow(){},faceToward(){},walkTo:null,walkWaypoints:[],walkSeat:null,walkLie:false,afterArrive:null,walkFacility:null,pose:'sit',lieSpot:'mat',currentSpot:'seat:0',
     overviewView, MAP_MIN:new THREE.Vector3(-50,0,-40),MAP_MAX:new THREE.Vector3(20,0,30),
     campTent: {group, interiorView: () => local}, fireWatching: true, camHold: true,
     document: {getElementById: id => nodes.get(id)},
@@ -51,4 +51,19 @@ test('leaving the tent view restores the avatar and clears the old wake transiti
 test('the tent stays visible to other campers after the local morning view ends',()=>{
  const s=setup(2);s.run('beginMorningView(); updateCam(5.5)');assert.equal(s.group.visible,true);assert.equal(s.me.visible,false);
  s.run('endMorningView()');assert.equal(s.group.visible,true);assert.equal(s.me.visible,true);
+});
+
+test('entering the tent directly skips waking effects and leaving restores the avatar',()=>{
+ const s=setup();s.run('toggleTentView()');
+ assert.equal(s.run('morningInside'),true);assert.equal(s.run('waking'),null);
+ near(s.camera.position,s.expected.awakePos);
+ assert.equal(s.shade.hidden,true);assert.equal(s.controls.enabled,true);
+ assert.equal(s.me.visible,false);assert.equal(s.context.currentSpot,'lie:tent');
+ s.run('toggleTentView()');
+ assert.equal(s.run('morningInside'),false);assert.equal(s.me.visible,true);assert.equal(s.context.pose,'sit');
+});
+test('an occupied tent does not change the current view or position',()=>{
+ const s=setup();s.context.spotIsTaken=()=>true;
+ const before=s.camera.position.clone();s.run('toggleTentView()');
+ near(s.camera.position,before);assert.equal(s.run('morningInside'),false);assert.equal(s.context.currentSpot,'seat:0');
 });

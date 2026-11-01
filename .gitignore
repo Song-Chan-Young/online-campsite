@@ -22,3 +22,6 @@ result.jpg
 
 # Licensed recorded SFX: ship as part of the built app, not standalone source assets.
 /public/assets/*-recording.mp3
+
+# CC0 tent-rain recording may be included in source.
+!/public/assets/rain-recording.mp3

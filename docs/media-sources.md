@@ -16,3 +16,9 @@ Download the named recordings from their source pages and convert to MP3 for the
 - Mixkit Sound Effects Free License: https://mixkit.co/license/modal/sfxFree/ . The recordings are incorporated in the camping end product. Do not redistribute the standalone recordings, including as public source files. They are ignored by Git; the local build copies them into the deployed app.
 
 The video and sound player uses local files, so no stock-site requests or third-party tracking run during playback.
+
+## Local rain recording, replacing YouTube
+
+2026-11-01: YouTube player removed at user request. Rain plays a locally served MP3 recording with no video player or third-party runtime requests.
+
+- public/assets/rain-recording.mp3: Rain on canvas tent by timsc (109 seconds). Original: https://freesound.org/people/timsc/sounds/317452/ . License: Creative Commons Zero (CC0), verified on the original source page. Downloaded HQ preview: https://cdn.freesound.org/previews/317/317452_266678-hq.mp3 . No claim of matching the user's reference exactly; selected as a similar real canvas-tent rain recording.

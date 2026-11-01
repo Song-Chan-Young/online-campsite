@@ -9,7 +9,7 @@ export function flameParticle(index,time,strength,out={}) {
   out.y=.17+age*(1.9+strength*.75);
   out.size=(.55+seed*.4)*(1-age*.45);
   out.heat=1-age;
-  out.alpha=Math.min(1,age/.08)*Math.pow(1-age,.5)*.32;
+  out.alpha=Math.min(1,age/.08)*Math.pow(1-age,.5)*.19;
   return out;
 }
 
@@ -42,7 +42,7 @@ export function createCampfireFlames(T) {
         float ends=smoothstep(0.0,.18,p.y)*(1.0-smoothstep(.62,1.0,p.y));
         float a=edge*ends*visibility;
         if(a<.002)discard;
-        vec3 color=mix(vec3(1.0,.12,.006),vec3(1.0,.83,.24),smoothstep(.1,.85,warmth));
+        vec3 color=mix(vec3(1.0,.12,.006),vec3(1.0,.94,.62),smoothstep(.1,.85,warmth));
         gl_FragColor=vec4(color,a);
       }`});
   const flame=new T.Points(geometry,material);flame.frustumCulled=false;group.add(flame);

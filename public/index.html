@@ -81,6 +81,8 @@
   .enter-card h1 { margin: 0 0 8px; font-size: 26px; }
   .enter-card p { margin: 0 0 22px; color: var(--text-dim); line-height: 1.6; }
   [hidden] { display: none !important; }
+
+
   .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: min(440px, calc(100vw - 32px));
     max-height: calc(100vh - 32px); overflow: auto; border-radius: 24px; padding: 20px; text-align: center; }
   .panel.wide { width: min(640px, calc(100vw - 32px)); }
@@ -203,7 +205,7 @@
   .camp-tools button:not(.fold) {display:flex;align-items:center;gap:8px;}
   .camp-tools button svg {width:22px;height:22px;flex:0 0 22px;}
   #camp-tools {width:min(290px,calc(100vw - 16px));grid-template-columns:repeat(3,minmax(0,1fr));}
-  #camp-tools.folded > #add-log,#camp-tools.folded > #go-store,#camp-tools.folded > #change-season {display:flex!important;}
+  #camp-tools.folded > #add-log,#camp-tools.folded > #go-store,#camp-tools.folded > #change-season,#camp-tools.folded > #enter-tent {display:flex!important;}
   #camp-tools #camp-connection {grid-column:1 / -1;}
   #camp-tools > button:not(.fold) {min-width:0;min-height:68px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 5px;font-size:13px;line-height:1.3;text-align:center;}
   #camp-tools > button:not(.fold) svg {width:24px;height:24px;flex:0 0 24px;}
@@ -372,11 +374,14 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M9 20v-7h6v7M3 10c0 3 4 3 4 0 0 3 5 3 5 0 0 3 5 3 5 0 0 3 4 3 4 0"/></svg>
     매점 가기
   </button>
+  <button id="put-skewer" type="button" hidden>🍡 꼬치 내려놓기</button>
+  <button id="enter-tent" type="button" aria-pressed="false">⛺ 텐트로 들어가기</button>
   <button id="change-season" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C9 3 3 8 5 15c3 8 15 4 15-11ZM5 21 16 9M10 15l-1-5M13 12h5"/></svg>
     계절 변경
   </button>
 </aside>
+
 <div id="wake-shade" hidden aria-hidden="true"></div>
 <dialog id="invite-dialog" class="social-dialog pill" aria-labelledby="invite-title">
   <h2 id="invite-title">옆자리에서 같이 쉴까요?</h2>
@@ -442,7 +447,7 @@
 </div>
 <div class="panel pill" id="season-panel" hidden role="dialog" aria-label="계절">
   <h2>계절</h2>
-  <p class="panel-sub">캠핑장 풍경이 계절에 따라 바뀌어요</p>
+  <p class="panel-sub">계절과 비 오는 날의 캠핑장 풍경을 골라보세요</p>
   <div class="item-grid four" id="season-items"></div>
   <button class="panel-close" type="button">닫기</button>
 </div>
@@ -488,19 +493,22 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCampfireFlames, createEmberTexture, createBurningWood } from './camp-fire.mjs';
 import { ForestSound } from './forest-sound.mjs';
 import { FieldAudio } from './field-audio.mjs';
+import {createCampRainTarps} from './camp-tarp.mjs';
+import {createRain} from './camp-rain.mjs';
 import { createAurora } from './camp-aurora.mjs';
 import { createDetailedTent } from './camp-tent.mjs';
 import { createShopCart } from './shop-cart.mjs';
 import { RECIPES, createCooking, createCookingVisual } from './camp-cooking.mjs';
 import { requestPlaybackSession, resumeAudioContext } from './audio-session.mjs';
 import {campCorridors} from './camp-corridors.mjs';
-import {FIRE_FOCUS,addedWoodPlacement} from './camp-fire-layout.mjs';
+import {FIRE_FOCUS,addedWoodPlacement,baseWoodPlacement} from './camp-fire-layout.mjs';
 import {CAMP_AREAS,areaOffset,worldPacket} from './camp-world.mjs';
 import {createAreaScene} from './camp-area-scene.mjs';
 import {safePosition,camperPosition,campRoute,safeWorldPosition,worldRoute} from './camp-navigation.mjs';
 import { CAMP_SEATS, FIRE_SCALE, fireSurge } from './camp-circle.mjs';
 import { createSpeechBubbles } from './speech-bubbles.mjs';
 import { QUICK_PHRASES } from './quick-chat.mjs';
+import {createMarshmallowSkewer} from './camp-skewer.mjs';
 import { createCampingChair } from './camp-chair.mjs';
 import { applyAvatarStyle } from './avatar-style.mjs';
 import { EXTRA_GEAR, recommendedGearIds, createGearProp } from './camp-catalog.mjs';
@@ -1364,9 +1372,9 @@ treeLeaves.clearCorridors(blocksCampRoute);
 for(let i=frontTrees.length-1;i>=0;i--)if(blocksCampRoute(frontTrees[i],2.8))frontTrees.splice(i,1);
 makePier();
 
-function makeChair() {return createCampingChair(THREE);}
-const seats = CAMP_SEATS.map(({x,z}) => {
-  const ch = makeChair();
+function makeChair(index=0) {return createCampingChair(THREE,['classic','low','highback','log'][index%4]);}
+const seats = CAMP_SEATS.map(({x,z},index) => {
+  const ch = makeChair(index);
   ch.position.set(x, 0, z);
   ch.lookAt(0, 0, 0);
   scene.add(ch);
@@ -1776,16 +1784,10 @@ function addLog(dropIn = false) {
     return;
   }
   const burning = createBurningWood(THREE, rand() * 20);
-  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.14, 1.7, 16, 8), burning.material);
-  log.userData.burning = burning;
-  // A newly added log is already catching fire when it lands, so it reads as
-  // part of the burning pile instead of a cold piece disappearing in the flame.
-  log.userData.burnAge = dropIn ? 20 : 20 + logs.length * 14;
-  const a = (logs.length * 2.39996) % (Math.PI * 2);
-  const base = new THREE.Vector3(Math.cos(a)*.65,.12,Math.sin(a)*.65);
-  const tip = new THREE.Vector3(Math.cos(a+.3)*.06,1.65,Math.sin(a+.3)*.06);
-  log.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tip.clone().sub(base).normalize());
-  log.position.copy(base).add(tip).multiplyScalar(.5);
+  const p=baseWoodPlacement(logs.length);
+  const log = new THREE.Mesh(new THREE.CylinderGeometry(p.radius*.85,p.radius,p.length,16,8),burning.material);
+  log.userData.burning=burning;log.userData.burnAge=65+logs.length*12;
+  log.rotation.set(0,p.yaw,Math.PI/2);log.position.set(p.x,p.y,p.z);
   log.userData.landY = log.position.y;
   log.castShadow = true;
   log.userData.dropFrom = dropIn ? 0.85 : 0;
@@ -1896,6 +1898,7 @@ class Sound {
       this.windBed = this.loopNoise('bandpass', 520, 0.35);
       this.forest = new ForestSound(c, this.master);
       this.recording = new FieldAudio(c, this.master);
+      this.rainRecording = new FieldAudio(c, this.master);
 
       // 숲 울림(잔향) — 새소리·풀벌레·장작을 조금씩 보냄
       this.reverb = this.makeReverb(2.6, 3.2);
@@ -1918,10 +1921,11 @@ class Sound {
     }
     resumeAudioContext(this.ctx);
     this.recording?.play(mode === 'morning' ? 'morning' : 'fire');
+    if(seasonKey==='rain')this.rainRecording?.play('rain');
   }
-  loopNoise(type, freq, q) {
+  loopNoise(type, freq, q, buffer = this.noise) {
     const c = this.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-    src.buffer = this.noise; src.loop = true;
+    src.buffer = buffer; src.loop = true;
     f.type = type; f.frequency.value = freq; f.Q.value = q;
     g.gain.value = 0;
     src.connect(f); f.connect(g); g.connect(this.master);
@@ -2207,6 +2211,7 @@ class Sound {
 }
 const sound = new Sound();
 
+
 // ---------- 동물 — 강아지 · 고양이 · 새 · 갈매기 · 나비 · 반딧불이 ----------
 const campCenter = () => fire.getWorldPosition(new THREE.Vector3());   // 내 모닥불 (데크가 바뀌어도 따라감)
 function legPivot(parent, x, y, z, len, r, mat) {                     // 위쪽이 관절인 다리
@@ -2436,13 +2441,23 @@ scene.add(aurora.group);
 let morningInside = false, waking = null;
 function endMorningView() {
   waking = null; morningInside = false;
+  updateTentButton();
   document.getElementById('wake-shade').hidden = true;
   renderer.domElement.style.filter = '';
   controls.enabled = true; controls.minDistance = 3;
   me.visible = true; if (myTag) myTag.visible = true;
 
 }
-function beginMorningView() {
+function toggleTentView() {
+  if (morningInside) { endMorningView(); flyTo('normal'); goSeat(); }
+  else beginMorningView(false);
+}
+function updateTentButton() {
+  const button=document.getElementById('enter-tent');
+  button.textContent=morningInside ? '🚶 텐트에서 나오기' : '⛺ 텐트로 들어가기';
+  button.setAttribute('aria-pressed',String(morningInside));
+}
+function beginMorningView(wake = true) {
   campTent.group.visible = true; campTent.group.updateWorldMatrix(true, false);
   const tentSpot='lie:tent';
   if(spotIsTaken(tentSpot)){toast('텐트에서 다른 분이 쉬고 있어요');return;}
@@ -2460,6 +2475,11 @@ function beginMorningView() {
   controls.minDistance=.25;controls.maxPolarAngle=Math.PI*.75;controls.enabled=false;
   const shade=document.getElementById('wake-shade');shade.hidden=false;shade.style.opacity=1;
   me.visible=false;if(myTag)myTag.visible=false;
+  if (!wake) {
+    waking=null;camera.position.copy(to);controls.enabled=true;
+    shade.hidden=true;renderer.domElement.style.filter='';
+  }
+  updateTentButton();
 }
 
 // ---------- 카메라 이동 ----------
@@ -2714,6 +2734,7 @@ function addRemote(p) {
     armL: g.getObjectByName('armL'), armR: g.getObjectByName('armR'), hips: [g.getObjectByName('hip0'), g.getObjectByName('hip1')], knees: [g.getObjectByName('knee0'), g.getObjectByName('knee1')] };
   g.position.set(r.tx, 0, r.tz);
   scene.add(g, tag);
+  r.held=p.held ?? null;
   remotes.set(p.id, r);
 }
 function removeRemote(id) {
@@ -2782,7 +2803,7 @@ function onPresence(m) {   // 처리했으면 true
     let r = remotes.get(m.id);
     if (!r) { addRemote(m); r = remotes.get(m.id); }
     if (r?.spot && r.spot !== m.spot) occupiedSpots.delete(r.spot);
-    if (r) { m=camperPosition(m); r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; if (typeof m.quiet === 'boolean' && r.quiet !== m.quiet) { r.quiet = m.quiet; updateRemoteLabel(r); } }
+    if (r) { m=camperPosition(m); r.tx = m.x; r.tz = m.z; r.tyaw = m.yaw; r.pose = m.pose; r.held=m.held ?? null; r.lieSpot = m.lieSpot; r.spot = m.spot ?? null; if (typeof m.quiet === 'boolean' && r.quiet !== m.quiet) { r.quiet = m.quiet; updateRemoteLabel(r); } }
     return true;
   }
   if (!quietMode && m.type === 'act' && m.act === 'hello') {   // 상대가 직접 보낸 인사만 표시
@@ -2805,12 +2826,12 @@ function freeChair() { return seats.find((seat, i) => !spotIsTaken(`seat:${i}`))
 function sendPresenceNow() {
   if (!chatWs || chatWs.readyState !== WebSocket.OPEN || myId === null) return;
   chatWs.send(JSON.stringify({ type: 'state', x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2),
-    yaw: +me.rotation.y.toFixed(2), pose, lieSpot, spot: currentSpot }));
+    yaw: +me.rotation.y.toFixed(2), pose, lieSpot, held: held?.id === 'marshmallow' && pose !== 'lie' ? 'marshmallow' : null, spot: currentSpot }));
 }
 function presenceTick(dt, t) {
   // 내 상태 보내기 — 바뀌면 0.1초마다, 그대로면 30초마다
   if (chatWs && chatWs.readyState === WebSocket.OPEN && myId !== null) {
-    const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot, spot: currentSpot };
+    const s = { x: +me.position.x.toFixed(2), z: +me.position.z.toFixed(2), yaw: +me.rotation.y.toFixed(2), pose, lieSpot, held: held?.id === 'marshmallow' && pose !== 'lie' ? 'marshmallow' : null, spot: currentSpot };
     const key = JSON.stringify(s);
     if ((key !== lastSent && t - lastSentAt > 0.1) || t - lastSentAt > 30) {
       chatWs.send(JSON.stringify({ type: 'state', ...s })); lastSent = key; lastSentAt = t;
@@ -2832,7 +2853,13 @@ function presenceTick(dt, t) {
     const sw = moving ? Math.sin(r.phase) * 0.55 : 0;
     r.hips.forEach((h, i) => { if (h) h.rotation.x = -Math.PI / 2 * r.sit + (i ? -sw : sw) - (i === 0 ? 0.7 * r.lie : 0); });
     r.knees.forEach((k, i) => { if (k) k.rotation.x = Math.PI / 2 * r.sit + (i === 0 ? 1.3 * r.lie : 0); });
-    if (r.armL) r.armL.rotation.x += ((r.pose === 'lie' ? 2.8 : moving ? sw * 0.8 : -0.6) - r.armL.rotation.x) * Math.min(1, dt * 6);
+    if(r.armL) {
+      const holding=r.held==='marshmallow' && r.pose!=='lie';
+      if(holding && !r.skewer){r.skewer=createMarshmallowSkewer(THREE).g;r.armL.add(r.skewer);}
+      if(r.skewer)r.skewer.visible=holding;
+      const book=r.armL.getObjectByName('book');if(book)book.visible=!holding;
+    }
+    if (r.armL) r.armL.rotation.x += ((r.pose === 'lie' ? 2.8 : r.held==='marshmallow' ? -1.35 : moving ? sw * 0.8 : -0.6) - r.armL.rotation.x) * Math.min(1, dt * 6);
     if (r.armR) {
       if (t < r.waveUntil) { r.armR.rotation.x = -0.2; r.armR.rotation.z = -2.5 + Math.sin(t * 12) * 0.35; }
       else { r.armR.rotation.x += ((r.pose === 'lie' ? 2.8 : moving ? -sw * 0.8 : -0.6) - r.armR.rotation.x) * Math.min(1, dt * 6); r.armR.rotation.z += (0 - r.armR.rotation.z) * Math.min(1, dt * 6); }
@@ -3279,6 +3306,8 @@ document.getElementById('go-store').addEventListener('click',()=>{
   startWalk(store.front);
   if(walkTo){walkFacility=store;walkBoost=2;toast('매점으로 걸어가요. 도착하면 매점이 열립니다.');}
 });
+document.getElementById('put-skewer').addEventListener('click', stopHeld);
+document.getElementById('enter-tent').addEventListener('click', toggleTentView);
 document.getElementById('change-season').addEventListener('click',()=>openPanel('season-panel'));
 function arriveFacility(f) {
   const kind = f.group.userData.kind;
@@ -3292,13 +3321,8 @@ let held = null;   // { id, until, prop, steam, puff }
 function makeHeldProp(id) {
   const g = new THREE.Group();
   const steamParts = [];
-  if (id === 'marshmallow') {
-    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.9, 6), stdMat(0x8a6a4a));
-    stick.position.y = -0.45; g.add(stick);
-    const mm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.06, 10), stdMat(0xfff8ee));
-    mm.position.y = -0.88; mm.name = 'mm'; g.add(mm);
-    g.position.set(0, -0.36, 0.02); g.rotation.x = 1.1;   // 손에서 앞으로 길게
-  } else {
+  if (id === 'marshmallow') return createMarshmallowSkewer(THREE);
+  {
     const cup = id === 'ramen'
       ? new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.11, 14), stdMat(0xf2efe6))
       : new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.09, 14), stdMat(0x3f6f8f));
@@ -3449,12 +3473,16 @@ function stopHeld() {
   held.prop.g.parent?.remove(held.prop.g);
   if (held.line) scene.remove(held.line, held.bobber);
   held = null;
+  document.getElementById('put-skewer').hidden=true;
+  sendPresenceNow();
 }
 function holdItem(id, dur) {
   stopHeld();
   const prop = makeHeldProp2(id);
   armL.add(prop.g);
   held = { id, until: clock.elapsedTime + dur, prop };
+  document.getElementById('put-skewer').hidden=id!=='marshmallow';
+  sendPresenceNow();
 }
 function stopActivity() {   // 자리를 뜨면 멈추는 것들
   if (morningInside) {endMorningView(); flyTo('normal');}
@@ -3527,6 +3555,9 @@ function updateHeld(dt, t) {
 
 // ---------- 캠프에 놓는 장비 — 놓은 뒤 누르면 동작 ----------
 const campExtras = [];
+let personalHammock=null;
+const rainShelters=createCampRainTarps(THREE,SERVER);
+for(const tarp of rainShelters)scene.add(tarp.group);
 const campSpot = (x, z) => new THREE.Vector3(fire.position.x + x, 0, fire.position.z + z);
 function placeLantern(n) {
   const spots = [[1.8, -2.4], [-0.6, 3.1]];   // 해먹(-3.5, 2.9)과 안 겹치게
@@ -3546,6 +3577,7 @@ function placeLantern(n) {
   });
 }
 function placeHammock() {
+  if(personalHammock)return personalHammock;
   const g = new THREE.Group(), post = stdMat(0x6b4a2f);
   for (const x of [-1.4, 1.4]) g.add(box(0.12, 1.5, 0.12, post, x, 0.75, 0));
   const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-1.35, 1.2, 0), new THREE.Vector3(0, 0.25, 0), new THREE.Vector3(1.35, 1.2, 0));
@@ -3555,11 +3587,14 @@ function placeHammock() {
   g.rotation.y = -0.67;
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
   fire.parent.add(g); campExtras.push(g);
-  registerInteract(g, () => {   // 누르면 가서 누움 — 발은 한쪽 끝, 머리는 반대쪽 끝
+  const lieDown=() => {   // 누르면 가서 누움 — 발은 한쪽 끝, 머리는 반대쪽 끝
     const axis = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y);
     const foot = g.position.clone().addScaledVector(axis, -0.9);
     startWalk(foot, null, { foot, face: axis.clone().negate(), spot: 'hammock' });
-  });
+  };
+  registerInteract(g,lieDown);
+  personalHammock={group:g,lieDown};
+  return personalHammock;
 }
 function placeRelaxChair() {   // 등받이가 많이 누운 의자 — seats 에 넣어 누르면 가서 앉음
   const g = new THREE.Group(), cloth = stdMat(0x8a4a6a), frame = stdMat(0x2a2a2a, { metalness: 0.4, roughness: 0.6 });
@@ -3690,7 +3725,7 @@ function useItem(id) {
   if (!(bag[id] > 0)) return;
   const it = ITEMS[id];
   if (it.ingredient) {openPanel('cooking-panel');return;}
-  if (it.cat === 'food' || it.cat === 'cooked') holdItem(id, it.dur);
+  if (it.cat === 'food' || it.cat === 'cooked') holdItem(id, id === 'marshmallow' ? Infinity : it.dur);
   else if (id === 'firewood') {
     sound.unlock();requestCampWood(true);return;
   } else if (id === 'guitar') {
@@ -3805,10 +3840,11 @@ const SEASONS = {
     fall: null, butterflies: 1, fireflies: 1 },
   autumn: { name: '가을', icon: '🍁', grass: '#8a7d3e', cement: '#9a958a', gravel: '#b3a68e', outside: 0x6a5a2a, sand: 0xd8c49a,
     fall: { n: 220, colors: ['#c8402f', '#e0782f', '#e8b23a', '#a8502a'], speed: [0.6, 1.1], size: 0.15, drift: 1.2 }, butterflies: 0.4, fireflies: 0 },
+  rain: { name: '비 오는 날', icon: '🌧️', grass: '#386342', cement: '#777e80', gravel: '#89958d', outside: 0x294d35, sand: 0xaaa38d, fall: null, butterflies: 0, fireflies: 0 },
   winter: { name: '겨울', icon: '❄️', grass: '#e9eef1', cement: '#d6dadc', gravel: '#dfe3e5', outside: 0xdfe6ea, sand: 0xe8ecee,
     fall: { n: 900, colors: ['#ffffff', '#f2f6fa'], speed: [0.9, 1.7], size: 0.1, drift: 0.5 }, butterflies: 0, fireflies: 0 },
 };
-const SEASON_KEYS = ['spring', 'summer', 'autumn', 'winter'];
+const SEASON_KEYS = ['spring', 'summer', 'autumn', 'winter', 'rain'];
 function seasonOfMonth(m) { return m >= 2 && m <= 4 ? 'spring' : m >= 5 && m <= 7 ? 'summer' : m >= 8 && m <= 10 ? 'autumn' : 'winter'; }   // 0=1월
 const leafColor = new THREE.Color();
 // 계절 나무 — 봄: 꽃나무(둥근 수관, 분홍·흰 꽃) · 여름: 짙은 초록 침엽수 · 가을: 단풍나무(둥근 수관) · 겨울: 눈 덮인 침엽수
@@ -3820,7 +3856,7 @@ function recolorTrees2(key) {
   if (!broad) {
     for (let i = 0; i < n; i++) {
       const [, r2, r3] = r[i];
-      if (key === 'summer') { leafColor.setHSL(0.29 + r2 * 0.06, 0.55 + r3 * 0.2, 0.16 + r2 * 0.08); a.setColorAt(i, leafColor); b.setColorAt(i, leafColor); }
+      if (key === 'summer' || key === 'rain') { leafColor.setHSL(0.29 + r2 * 0.06, 0.55 + r3 * 0.2, 0.16 + r2 * 0.08); a.setColorAt(i, leafColor); b.setColorAt(i, leafColor); }
       else {   // 겨울 — 아래도 눈이 내려앉아 희끗, 꼭대기는 하얗게
         leafColor.setHSL(0.42, 0.12 + r3 * 0.08, 0.62 + r2 * 0.12); a.setColorAt(i, leafColor);
         leafColor.setHSL(0.58, 0.12, 0.93 + r2 * 0.05); b.setColorAt(i, leafColor);
@@ -3865,7 +3901,12 @@ const SEASON_SKY = {
       sunColor: 0xfff8e8, sun: 2.4, sunPos: [36, 30, 14], stars: 0, moon: 0, fogDensity: 0.012 },
   },
 };
-const seasonPreset = m => presetState({ ...PRESETS[m], ...(SEASON_SKY[seasonKey]?.[m] || {}) });
+const RAIN_SKY = {
+  top: 0x566777, bottom: 0x9ba8ae, fog: 0x87989f, hemiSky: 0xc0d1d9, hemiGround: 0x34483b,
+  hemi: 0.8, sunColor: 0xc4d1dc, sun: 0.55, sunPos: [20, 36, 10], stars: 0, moon: 0, fogDensity: 0.026,
+};
+const seasonPreset = m => presetState({ ...PRESETS[m], ...(SEASON_SKY[seasonKey]?.[m] || {}),
+  ...(seasonKey === 'rain' ? { ...RAIN_SKY, ...(m === 'night' ? { top: 0x101923, bottom: 0x293946, fog: 0x263641, hemi: 0.3, sun: 0.12 } : {}) } : {}) });
 // 계절 옷 — 여름 반팔(맨팔) · 겨울 경량패딩(남색 누빔, 긴바지) · 봄가을 후드+조끼
 function applyOutfit(key) {
   setTimeout(() => { for (const r of remotes.values()) {copyLook(r.g);applyAvatarStyle(r.g,r.g.userData.appearance??r.id);} });
@@ -4055,6 +4096,8 @@ function updateSlideRide(dt, t) {   // updateWalk 다음에 불러 위치·자�
   camera.position.lerp(slideCamWant, k);
   controls.target.lerp(slideLook, k);
 }
+const rain = createRain(THREE);
+scene.add(rain.object);
 const seasonBtn = document.getElementById('season-btn');
 function applySeason(key, announce = false) {
   const S = SEASONS[key];
@@ -4075,6 +4118,10 @@ function applySeason(key, announce = false) {
   foamMat.visible = !winter;
   applyOutfit(key);                                      // 여름 반팔 · 겨울 경량패딩
   setupFall(S.fall);
+  for(const tarp of rainShelters)tarp.setSeason(key);
+  rain.setEnabled(key === 'rain');
+  if(sound.ctx){if(key==='rain')sound.rainRecording?.play('rain');else sound.rainRecording?.stop();}
+  rain.update(0, camera.position,rainShelters);
   buoys.visible = key === 'summer';
   waterSlide.group.visible = key === 'summer';   // 미끄럼틀은 여름만
   if (!panels[0].hidden) renderShop();           // 계절 추천 다시
@@ -4082,7 +4129,7 @@ function applySeason(key, announce = false) {
   seasonBtn.textContent = `${S.icon} ${S.name}`;
   document.querySelectorAll('#season-items .item').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === key)));
   saveJson('camp-season', key);
-  if (announce) toast(`${S.name}이 왔어요`);
+  if (announce) toast(key === 'rain' ? '비가 내리기 시작했어요' : `${S.name}이 왔어요`);
 }
 {
   const grid = document.getElementById('season-items');
@@ -4287,6 +4334,7 @@ renderer.setAnimationLoop(() => {
     for (const a of [armL, armR]) if (Math.abs(a.rotation.x) > Math.PI) a.rotation.x = Math.atan2(Math.sin(a.rotation.x), Math.cos(a.rotation.x));   // 물 밖에선 한 바퀴 돌지 않게
   }
   updateFall(dt, t);
+  rain.update(dt, camera.position,rainShelters);
   placeTag(myTag, me);   // 머리 위 닉네임
   speechBubbles.update(t,id=>{
     const who=id===myId?me:remotes.get(id)?.g;

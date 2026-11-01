@@ -27,3 +27,15 @@ test('recorded audio play is called inside the gesture before resume resolves an
     await audio.play('fire');assert.equal(playCalls,1);
   } finally {globalThis.Audio=OriginalAudio;}
 });
+
+test('local rain recording plays without a video player and stops on season change',async()=>{
+ const original=globalThis.Audio;let pauses=0;
+ globalThis.Audio=class {paused=true;addEventListener(){}load(){}play(){this.paused=false;return Promise.resolve();}pause(){this.paused=true;pauses++;}};
+ try {
+  const gain={cancelScheduledValues(){},setValueAtTime(){},linearRampToValueAtTime(){}};
+  const context={currentTime:0,createGain:()=>({gain,connect(){}}),createMediaElementSource:()=>({connect(){}}),resume:()=>Promise.resolve()};
+  const recording=new FieldAudio(context,{});await recording.play('rain');
+  assert.equal(recording.audio.src,'./assets/rain-recording.mp3');assert.equal(recording.active,true);
+  recording.stop();assert.equal(recording.active,false);assert.equal(recording.audio.paused,true);assert.equal(pauses,1);
+ }finally{globalThis.Audio=original;}
+});

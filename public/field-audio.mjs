@@ -7,15 +7,20 @@ export class FieldAudio {
     this.kind=null;this.active=false;this.request=0;this.pending=null;
     this.audio.addEventListener('error',()=>{this.active=false;this.kind=null;});
   }
+  stop() {
+    this.request++;this.audio.pause();this.active=false;this.kind=null;this.pending=null;
+    this.output.gain.cancelScheduledValues(this.context.currentTime);
+    this.output.gain.setValueAtTime(0,this.context.currentTime);
+  }
   async play(kind) {
     if(this.kind===kind&&this.active&&!this.audio.paused)return;
     if(this.kind===kind&&this.pending)return this.pending.catch(()=>{});
     const request=++this.request;this.kind=kind;this.active=false;
-    this.audio.src=kind==='morning'?'./assets/forest-recording.mp3':'./assets/fire-recording.mp3';
+    this.audio.src=kind==='rain'?'./assets/rain-recording.mp3':kind==='morning'?'./assets/forest-recording.mp3':'./assets/fire-recording.mp3';
     this.audio.load();
     this.output.gain.cancelScheduledValues(this.context.currentTime);
     this.output.gain.setValueAtTime(0,this.context.currentTime);
-    this.output.gain.linearRampToValueAtTime(kind==='morning'?.75:.55,this.context.currentTime+2.8);
+    this.output.gain.linearRampToValueAtTime(kind==='rain'?.8:kind==='morning'?.75:.55,this.context.currentTime+2.8);
     try {
       // Request both before yielding so iOS retains the user activation.
       const resumed=this.context.resume();

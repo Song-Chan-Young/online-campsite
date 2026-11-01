@@ -77,7 +77,7 @@ export function createBurningWood(THREE, seed = 0) {
       float ashRim = (1.0-smoothstep(0.018,0.065,abs(patchNoise-ashThreshold)))
         *smoothstep(0.14,0.3,uBurn);
       float smolder = fissure*(1.0-ashPatch*0.76) + endGlow*0.72 + ashRim*0.24;
-      totalEmissiveRadiance += vec3(1.5,0.095,0.008) * smolder * uWoodHeat * emberPulse;
+      totalEmissiveRadiance += vec3(1.8,0.28,0.018) * smolder * uWoodHeat * emberPulse;
     `);
   };
   return {material, update(age, strength, time, crackle = 0) {
