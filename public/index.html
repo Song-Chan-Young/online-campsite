@@ -954,6 +954,7 @@ const campTent = createDetailedTent(THREE);
 {
   const tent = campTent.group;
   tent.position.set(CAMP_AREAS[SERVER].tent[0],DECK_H,CAMP_AREAS[SERVER].tent[1]);
+  tent.visible = SERVER !== 2;
   // (원본, 2026-10-30 송찬영 [AI]) tent.lookAt(-7, DECK_H, -18);   — 아침에 눈뜨면 차·P 표지판이 보여서 동북동 숲 쪽으로 돌림
   tent.rotation.y=Math.atan2(14.2,-4.8);   // 입구는 캠핑장 동쪽 숲 가장자리를 향함 (아침 기상 시점)
   scene.add(tent);
@@ -1197,16 +1198,37 @@ function makeGate(text) {                                             // 입출�
   const s = makeSign(text, 0.4 * text.length * 0.9 + 0.6, 0.45); s.position.set(0, 2.6, 0.17); g.add(s);
   return g;
 }
+let camperCar;
 function makeCamperCar() {                                            // 차박 — 지붕 텐트 올린 차
-  const g = new THREE.Group(), body = stdMat(0x8a9a8a, { roughness: 0.5, metalness: 0.3 }), black = stdMat(0x1e1e1e);
-  g.add(box(1.9, 0.9, 4.4, body, 0, 0.75, 0), box(1.8, 0.75, 2.6, body, 0, 1.55, -0.3));
-  g.add(box(1.82, 0.5, 2.0, stdMat(0x2b3440, { roughness: 0.2 }), 0, 1.6, -0.2));
+  const g = new THREE.Group(), exterior = new THREE.Group(), interior = new THREE.Group();
+  const body = stdMat(0x8a9a8a, { roughness: 0.5, metalness: 0.3 }), black = stdMat(0x1e1e1e);
+  exterior.add(box(1.9, 0.9, 4.4, body, 0, 0.75, 0), box(1.8, 0.75, 2.6, body, 0, 1.55, -0.3));
+  exterior.add(box(1.82, 0.5, 2.0, stdMat(0x2b3440, { roughness: 0.2 }), 0, 1.6, -0.2));
   for (const [x, z] of [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]]) {
     const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.25, 14), black);
-    wh.rotation.z = Math.PI / 2; wh.position.set(x, 0.38, z); g.add(wh);
+    wh.rotation.z = Math.PI / 2; wh.position.set(x, 0.38, z); exterior.add(wh);
   }
   const rt = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 1.0, 0.9, 4, 1), stdMat(0xd8a040, { flatShading: true }));
-  rt.rotation.y = Math.PI / 4; rt.scale.set(1, 1, 1.6); rt.position.set(0, 2.38, -0.3); g.add(rt);
+  rt.rotation.y = Math.PI / 4; rt.scale.set(1, 1, 1.6); rt.position.set(0, 2.38, -0.3); exterior.add(rt);
+  const trim = stdMat(0x67503d), upholstery = stdMat(0x9b8062);
+  const glass = new THREE.MeshBasicMaterial({color:0x9fc8d5,transparent:true,opacity:0.2,side:THREE.DoubleSide,depthWrite:false});
+  interior.add(box(1.65, 0.07, 2.4, trim, 0, 1.2, -0.3));
+  interior.add(box(1.35, 0.12, 1.25, upholstery, 0, 1.3, -0.72));
+  interior.add(box(1.65, 0.08, 2.4, trim, 0, 1.9, -0.3));
+  interior.add(box(0.08, 0.52, 2.2, upholstery, -0.8, 1.48, -0.3), box(0.08, 0.52, 2.2, upholstery, 0.8, 1.48, -0.3));
+  const windshield = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 0.48), glass);
+  windshield.position.set(0, 1.67, 0.82); interior.add(windshield);
+  interior.add(box(1.4, 0.15, 0.22, trim, 0, 1.28, 0.72));
+  for (const side of [-1,1]) {
+    const window = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.38), glass);
+    window.rotation.y = side * Math.PI / 2; window.position.set(side * 0.79, 1.67, -0.3); interior.add(window);
+  }
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.018, 8, 24), black);
+  wheel.position.set(-0.68, 1.54, 0.68); interior.add(wheel);
+  const cabinLight = new THREE.PointLight(0xffddb5, 2.4, 5);
+  cabinLight.position.set(0, 1.78, -0.25); interior.add(cabinLight);
+  g.add(exterior, interior); interior.visible = false;
+  camperCar = {group:g,exterior,interior,interiorView(){return {sleepPos:new THREE.Vector3(0,1.42,-1.0),awakePos:new THREE.Vector3(0,1.5,-0.86),target:new THREE.Vector3(0,1.66,1.3)};}};
   return g;
 }
 function makePier() {                                                 // 나무 데크 다리
@@ -2441,6 +2463,7 @@ scene.add(aurora.group);
 let morningInside = false, waking = null;
 function endMorningView() {
   waking = null; morningInside = false;
+  if (SERVER === 2) { camperCar.interior.visible = false; camperCar.exterior.visible = true; }
   updateTentButton();
   document.getElementById('wake-shade').hidden = true;
   renderer.domElement.style.filter = '';
@@ -2454,22 +2477,27 @@ function toggleTentView() {
 }
 function updateTentButton() {
   const button=document.getElementById('enter-tent');
-  button.textContent=morningInside ? '🚶 텐트에서 나오기' : '⛺ 텐트로 들어가기';
+  button.textContent=SERVER===2 ? morningInside ? '🚶 차에서 나오기' : '🚐 차 안으로 들어가기'
+    : morningInside ? '🚶 텐트에서 나오기' : '⛺ 텐트로 들어가기';
   button.setAttribute('aria-pressed',String(morningInside));
 }
 function beginMorningView(wake = true) {
-  campTent.group.visible = true; campTent.group.updateWorldMatrix(true, false);
-  const tentSpot='lie:tent';
-  if(spotIsTaken(tentSpot)){toast('텐트에서 다른 분이 쉬고 있어요');return;}
+  const shelter = SERVER === 2 ? camperCar : campTent;
+  const shelterSpot = SERVER === 2 ? 'lie:car' : 'lie:tent';
+  if(spotIsTaken(shelterSpot)){toast(SERVER===2?'차 안에서 다른 분이 쉬고 있어요':'텐트에서 다른 분이 쉬고 있어요');return;}
+  if (SERVER === 2) { camperCar.exterior.visible = false; camperCar.interior.visible = true; }
+  else campTent.group.visible = true;
+  shelter.group.updateWorldMatrix(true, false);
   stopActivity();walkTo=null;walkWaypoints=[];walkSeat=null;walkLie=false;afterArrive=null;walkFacility=null;
-  const sleeping=campTent.group.localToWorld(new THREE.Vector3(.34,0,.45));
-  const facing=campTent.group.localToWorld(new THREE.Vector3(.34,0,1.45)).sub(sleeping);faceToward(facing.x,facing.z);
-  me.position.x=sleeping.x;me.position.z=sleeping.z;pose='lie';lieSpot='tent';currentSpot=tentSpot;sendPresenceNow();
+  const view=shelter.interiorView();
+  const sleeping=shelter.group.localToWorld(SERVER===2?new THREE.Vector3(0,0,-.72):new THREE.Vector3(.34,0,.45));
+  const viewDirection=SERVER===2?new THREE.Vector3(0,1.43,1.5):new THREE.Vector3(.34,0,1.45);
+  const facing=shelter.group.localToWorld(viewDirection).sub(sleeping);faceToward(facing.x,facing.z);
+  me.position.x=sleeping.x;me.position.z=sleeping.z;pose='lie';lieSpot=SERVER===2?'car':'tent';currentSpot=shelterSpot;sendPresenceNow();
   morningInside = true; fireWatching = false; camHold = false; camTween = null;
-  const view=campTent.interiorView();
-  const from=campTent.group.localToWorld(view.sleepPos.clone());
-  const to=campTent.group.localToWorld(view.awakePos.clone());
-  const target=campTent.group.localToWorld(view.target.clone());
+  const from=shelter.group.localToWorld(view.sleepPos.clone());
+  const to=shelter.group.localToWorld(view.awakePos.clone());
+  const target=shelter.group.localToWorld(view.target.clone());
   waking={time:0,from,to,target};
   camera.position.copy(from);controls.target.copy(target);
   controls.minDistance=.25;controls.maxPolarAngle=Math.PI*.75;controls.enabled=false;
@@ -2481,6 +2509,7 @@ function beginMorningView(wake = true) {
   }
   updateTentButton();
 }
+updateTentButton();
 
 // ---------- 카메라 이동 ----------
 // (원본, 2026-10-30 송찬영 [AI]) stars: target (-4, 9, -12) — maxPolarAngle(0.495π) 에 걸려 카메라가 나무 높이로 밀려 올라감

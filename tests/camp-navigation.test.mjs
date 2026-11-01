@@ -15,7 +15,7 @@ test('opposite-side walking routes keep every segment outside the fire',()=>{
  }assert.equal(prev.x,-4);
 });
 test('additional resting spots reserve independently and preserve their identity',()=>{
- const hub=new CampHub();for(const spot of ['mat2','mat3','tent']){
+ const hub=new CampHub();for(const spot of ['mat2','mat3','tent','car']){
  const c={send(){}};hub.join(c);hub.message(c,JSON.stringify({type:'state',x:-4,z:-3,yaw:0,pose:'lie',lieSpot:spot,spot:`lie:${spot}`}));
  assert.equal(c.spot,`lie:${spot}`);assert.equal(c.state.lieSpot,spot);
  }

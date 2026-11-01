@@ -22,6 +22,13 @@ test('walking away and disconnecting make the spot available', () => {
   clients.delete(b);
   assert.equal(claimSpot(a, 'lie:mat', clients), true);
 });
+test('the car sleeping spot can only be reserved by one camper', () => {
+  const a = {room:'2', spot:null}, b = {room:'2', spot:null};
+  const clients = new Set([a,b]);
+  assert.equal(claimSpot(a, 'lie:car', clients), true);
+  assert.equal(claimSpot(b, 'lie:car', clients), false);
+  assert.equal(b.spot, null);
+});
 test('failed claims keep the current reservation; full rooms have no free chair', () => {
   const a = {room:'1', spot:'seat:0'}, b = {room:'1', spot:'seat:1'};
   const clients = new Set([a,b]);
