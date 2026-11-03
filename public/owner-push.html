@@ -1,0 +1,37 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="/owner-push.webmanifest"><title>고객의 소리 알림</title>
+<style>body{margin:0;background:#152d26;color:#f6f1df;font:16px/1.6 system-ui;padding:24px}main{max-width:520px;margin:auto}button{width:100%;font:inherit;padding:15px;border:0;border-radius:14px;background:#eddaaa;color:#152d26;margin:8px 0;cursor:pointer}article{padding:16px;background:#ffffff0e;border:1px solid #ffffff25;border-radius:14px;margin:14px 0;overflow-wrap:anywhere}article p{white-space:pre-wrap}small{opacity:.7}#status{white-space:pre-wrap}</style>
+<main><h1>고객의 소리 알림</h1><p>새 기능 제안과 버그 신고를 휴대폰으로 받아보세요.</p><p id="ios" hidden>아이폰: Safari 공유 → 홈 화면에 추가 → 홈 화면의 ‘고객의 소리’를 연 뒤 아래 버튼을 눌러주세요.</p><form id="connect"><label for="connection-link">전용 연결 링크</label><input id="connection-link" type="password" autocomplete="off" placeholder="채팅에서 받은 전용 링크를 붙여넣으세요" style="box-sizing:border-box;width:100%;padding:14px;font-size:16px;border-radius:12px;margin-top:8px"><button type="submit">관리자 연결하기</button><small>홈 화면에서 처음 열었다면 링크를 한 번 더 붙여넣어 주세요.</small></form><button id="enable">이 휴대폰에서 알림 받기</button><p id="status" role="status"></p><button id="refresh">접수 내역 새로고침</button><section id="inbox"></section></main>
+<script type="module">
+const status=document.getElementById('status');const fragment=new URLSearchParams(location.hash.slice(1));if(fragment.get('key')){localStorage.setItem('feedback-admin-key',fragment.get('key'));history.replaceState(null,'',location.pathname);}
+let key=localStorage.getItem('feedback-admin-key');
+const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);document.getElementById('ios').hidden=!ios;
+async function api(path,options={}){const response=await fetch('/push/'+path,{...options,headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'}});const result=await response.json();if(!response.ok)throw Error(result.error||'요청에 실패했어요.');return result;}
+async function inbox(){try{const {items}=await api('inbox');const container=document.getElementById('inbox');container.replaceChildren();if(!items.length)container.textContent='아직 접수된 의견이 없어요.';for(const item of items){const article=document.createElement('article');const title=document.createElement('h3');title.textContent=(item.type==='bug'?'🐛 버그 신고':'💡 기능 제안')+' · '+item.title;const date=document.createElement('small');date.textContent=new Date(item.createdAt).toLocaleString('ko-KR');const body=document.createElement('p');body.textContent=item.message;article.append(title,date,body);container.append(article);}}catch(e){status.textContent=e.message;}}
+let config;let registration;
+async function connect(){
+ config=await api('config');
+ if('serviceWorker'in navigator)registration=await navigator.serviceWorker.register('/owner-push-sw.js');
+ document.getElementById('connect').hidden=true;
+ status.textContent=ios&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches?'관리자 연결 완료. 홈 화면에 추가한 뒤 새 아이콘으로 열어주세요.':'관리자 연결 완료. 아래 알림 받기 버튼을 눌러주세요.';
+ await inbox();
+}
+document.getElementById('connect').onsubmit=async e=>{
+ e.preventDefault();const input=document.getElementById('connection-link');
+ try{const raw=input.value.trim();let candidate=raw;try{candidate=new URLSearchParams(new URL(raw).hash.slice(1)).get('key')||'';}catch{}
+ if(!/^[A-Za-z0-9_-]{40,100}$/.test(candidate))throw Error('받으신 전용 링크 전체를 복사해서 붙여넣어 주세요.');
+ key=candidate;await connect();localStorage.setItem('feedback-admin-key',key);input.value='';
+ }catch(e){config=null;status.textContent=e.message;}
+};
+if(key){try{await connect();}catch(e){status.textContent=e.message;}}else status.textContent='위 입력란에 전용 링크를 붙여넣고 관리자 연결하기를 눌러주세요.';
+document.getElementById('refresh').onclick=inbox;
+document.getElementById('enable').onclick=async()=>{try{
+ if(!key||!config){document.getElementById('connect').hidden=false;document.getElementById('connection-link').focus();throw Error('먼저 전용 링크를 붙여넣고 관리자 연결하기를 눌러주세요.');}
+ if(ios&&!matchMedia('(display-mode: standalone)').matches&&!navigator.standalone)throw Error('먼저 홈 화면에 추가한 뒤, 홈 화면 아이콘으로 열어주세요.');
+ if(!('Notification'in window)||!('PushManager'in window))throw Error('이 브라우저는 푸시를 지원하지 않아요. Safari 또는 Chrome에서 열어주세요.');
+ if(await Notification.requestPermission()!=='granted')throw Error('휴대폰 설정에서 이 앱의 알림을 허용해 주세요.');
+ const ready=await navigator.serviceWorker.ready;const bytes=Uint8Array.from(atob(config.publicKey.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+ const subscription=await ready.pushManager.getSubscription()||await ready.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes});
+ const result=await api('subscribe',{method:'POST',body:JSON.stringify(subscription)});status.textContent=result.testSent?'알림 연결 완료! 테스트 알림을 보냈어요.':'기기가 등록됐지만 테스트 알림 전송에 실패했어요. 다시 시도해 주세요.';
+ }catch(e){status.textContent=e.message;}};
+navigator.serviceWorker?.addEventListener('message',()=>inbox());
+</script></html>

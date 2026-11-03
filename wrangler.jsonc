@@ -3,10 +3,11 @@
   "main": "cloud/worker.mjs",
   "compatibility_date": "2026-10-30",
   "workers_dev": true,
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": ".build/site",
     "binding": "ASSETS",
-    "run_worker_first": ["/chat", "/health", "/stats", "/presence"]
+    "run_worker_first": ["/chat", "/health", "/stats", "/presence", "/feedback", "/push/*"]
   },
   "durable_objects": {"bindings": [{"name": "CAMPS", "class_name": "CampRoom"}]},
   "migrations": [{"tag": "v1", "new_sqlite_classes": ["CampRoom"]}]

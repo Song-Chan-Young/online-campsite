@@ -1,8 +1,12 @@
+import {pushAdmin,sendFeedbackPush} from '../lib/feedback-push.mjs';
+import {receiveFeedback} from '../lib/feedback.mjs';
 import {CampHub} from '../lib/camp-hub.mjs';
 
 export default {
   async fetch(request,env) {
     const url=new URL(request.url);
+    if(url.pathname.startsWith('/push/'))return env.CAMPS.getByName('customer-feedback').fetch(request);
+    if(url.pathname==='/feedback')return env.CAMPS.getByName('customer-feedback').fetch(request);
     if(url.pathname==='/health') return Response.json({ok:true});
     if(url.pathname==='/presence') {
       const results=await Promise.all(['1','2','3'].map(room=>env.CAMPS.getByName(`camp-${room}`).fetch(new Request(new URL('/presence',url))).then(r=>r.json())));
@@ -35,7 +39,8 @@ export default {
 // or worry text is written to a database. The ctx constructor form is supported
 // by Durable Objects without a platform import, keeping protocol tests portable.
 export class CampRoom {
-  constructor(ctx) {
+  constructor(ctx,env={}) {
+    this.env=env;
     this.ctx=ctx;this.hub=new CampHub();this.sessions=new Map();
     this.ready=ctx.blockConcurrencyWhile(async()=>{this.hub.loadMetrics(await ctx.storage.get('counts'));});
     for(const socket of ctx.getWebSockets()) {
@@ -48,6 +53,12 @@ export class CampRoom {
   }
   async fetch(request) {
     await this.ready;
+    if(new URL(request.url).pathname.startsWith('/push/'))return pushAdmin(request,this.ctx.storage,this.env);
+    if(new URL(request.url).pathname==='/feedback'){
+      const response=await receiveFeedback(request,this.ctx.storage);
+      if(response.status===201){const {id}=await response.clone().json();const item=await this.ctx.storage.get('feedback:'+id);this.ctx.waitUntil(sendFeedbackPush(this.ctx.storage,this.env,{title:(item.type==='bug'?'🐛 버그 신고':'💡 기능 제안')+' · '+item.title,body:item.message.slice(0,180),url:'/owner-push.html'}));}
+      return response;
+    }
     if(new URL(request.url).pathname==='/capabilities')return Response.json({watch:true});
     if(new URL(request.url).pathname==='/presence') return Response.json(this.hub.getPresence());
     if(new URL(request.url).pathname==='/stats') return Response.json(this.hub.getMetrics());
