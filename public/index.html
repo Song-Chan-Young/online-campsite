@@ -528,7 +528,7 @@ import { RECIPES, createCooking, createCookingVisual } from './camp-cooking.mjs'
 import { requestPlaybackSession, resumeAudioContext } from './audio-session.mjs';
 import {campCorridors} from './camp-corridors.mjs';
 import {FIRE_FOCUS,addedWoodPlacement,baseWoodPlacement} from './camp-fire-layout.mjs';
-import {CAMP_AREAS,areaOffset,worldPacket} from './camp-world.mjs';
+import {CAMP_AREAS,areaOffset,worldPacket,areaAt,transferAddress,consumeTransfer} from './camp-world.mjs';
 import {createAreaScene} from './camp-area-scene.mjs';
 import {safePosition,camperPosition,campRoute,safeWorldPosition,worldRoute} from './camp-navigation.mjs';
 import { CAMP_SEATS, FIRE_SCALE, fireSurge } from './camp-circle.mjs';
@@ -775,6 +775,12 @@ const SERVER = (() => {
   if (SERVERS[q]) return q;
   try { const s = Number(localStorage.getItem('camp-server')); if (SERVERS[s]) return s; } catch {}
   return 1;
+})();
+// 다른 구역으로 걸어와서 다시 들어온 경우 — 그 자리에 서서 시작
+let arrivingTransfer = (() => {
+  const {transfer, url} = consumeTransfer(location.href);
+  if (transfer) { history.replaceState(null, '', url); try { localStorage.setItem('camp-server', String(SERVER)); } catch {} }
+  return transfer;
 })();
 const [ANCHOR_X, ANCHOR_Y] = SERVERS[SERVER].anchor;   // 지도 px — 이 자리가 내 텐트 자리(-4.3, -3.2)
 const mw = (px, py) => new THREE.Vector3((px - ANCHOR_X) * MAP_S - 4.3, 0, (py - ANCHOR_Y) * MAP_S - 3.2);
@@ -1671,6 +1677,15 @@ const CAM_MAX_R = 10.5;      // 카메라가 나무 숲(반경 13~)에 들어가
 function faceToward(dx, dz) { me.rotation.set(0, Math.atan2(dx, dz), 0); }
 me.rotation.order = 'YXZ';   // 방향(Y) 먼저, 그다음 눕기(X)
 faceToward(-me.position.x, -me.position.z);
+// 다른 구역 안에 멈춰 서면 그 구역 서버로 옮겨 감 — 거기서 앉기·눕기·요리를 그대로 씀
+let areaMoving = false;
+function moveToArea(room, seat = null) {
+  if (areaMoving || room === SERVER) return;
+  areaMoving = true;
+  toast(`${CAMP_AREAS[room].name}(으)로 옮겨 가요`);
+  try { localStorage.setItem('camp-server', String(room)); } catch {}
+  location.href = transferAddress(location.href, SERVER, room, {x: me.position.x, z: me.position.z, seat});
+}
 function goLie() { if (pose !== 'lie') startWalk(MAT_FOOT, null, true); }
 function goSeat() { if (pose === 'lie' || walkLie) startWalk(seats[0].getWorldPosition(new THREE.Vector3()), seats[0]); }
 // (원본, 2026-10-30 송찬영 [AI]) function startWalk(point, seat = null) {
@@ -1734,6 +1749,7 @@ function updateWalk(dt, t) {
         if (walkFacility) { const f = walkFacility; walkFacility = null; arriveFacility(f); }   // 매점·안내판 앞에 도착
       }
       if (afterArrive) { const f = afterArrive; afterArrive = null; f(); }   // 망원경 보기·낚시·기타 등
+      if (!walkTo && pose === 'stand') { const room = areaAt(me.position.x, me.position.z, SERVER); if (room && room !== SERVER) moveToArea(room); }
     // (원본, 2026-10-30 송찬영 [AI]) } else if (sitBlend < 0.2) {   // 다 일어선 뒤 출발
     } else if (sitBlend < 0.2 && lieBlend < 0.2) {   // 다 일어선 뒤 출발
       // (원본, 2026-10-30 송찬영 [AI]) const step = Math.min(dist, WALK_SPEED * dt);
@@ -1799,6 +1815,17 @@ renderer.domElement.addEventListener('pointerup', e => {
   }
   const restHit=raycaster.intersectObjects(matClickables,true)[0];
   if(restHit){const rest=extraRestSpots.find(r=>{let o=restHit.object;while(o&&o!==r.group)o=o.parent;return !!o;});if(rest)startWalk(rest.foot,null,rest);else goLie();return;}   // 매트 → 가서 누움
+  const areaChairHit = raycaster.intersectObjects(otherAreaChairs, true)[0];   // 다른 구역 의자 → 걸어가서 그 구역에 앉음
+  if (areaChairHit) {
+    let o = areaChairHit.object;
+    while (o && !o.userData.areaSeat) o = o.parent;
+    if (o) {
+      const {room, index} = o.userData.areaSeat;
+      startWalk(o.getWorldPosition(new THREE.Vector3()));
+      if (walkTo) afterArrive = () => moveToArea(room, index);
+      return;
+    }
+  }
   const seatHit = raycaster.intersectObjects(seats, true)[0];
   if (seatHit) {
     let o = seatHit.object;
@@ -1877,11 +1904,12 @@ fireLight.shadow.radius = 3;
 fireLight.shadow.bias = -0.002;
 scene.add(fireLight);
 
-const otherAreaScenes=new Map();
+const otherAreaScenes=new Map(),otherAreaChairs=[];
 for(const room of [1,2,3])if(room!==SERVER){
   const area=createAreaScene(THREE,{offset:areaOffset(room,SERVER),chair:seats[0],tent:campTent.group,tentPosition:CAMP_AREAS[room].tent,restSpots:extraRestSpots.map(s=>s.group)});
   const sign=makePost(CAMP_AREAS[room].name,1.5,.4);sign.position.set(-6,0,0);area.group.add(sign);
   scene.add(area.group);otherAreaScenes.set(room,area);
+  area.chairs.forEach((chair,index)=>{chair.userData.areaSeat={room,index};otherAreaChairs.push(chair);});
 }
 const sparkCount = 36;
 const sparkPos = new Float32Array(sparkCount * 3);
@@ -2691,6 +2719,7 @@ function connectChat() {
   // (원본, 2026-10-30 송찬영 [AI]) const ws = chatWs = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chat`);
   const query = new URLSearchParams({server: String(SERVER), visitor: visitorToken, quiet: quietMode ? '1' : '0'});
   const near = new URL(location.href).searchParams.get('near'); if (near) query.set('near', near);
+  if (arrivingTransfer) query.set('stand', '1');
   const ws = chatWs = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chat?${query}`);   // 서버(방)별로
   ws.onmessage = e => {
     let m;
@@ -2720,6 +2749,12 @@ function connectChat() {
         pose = 'stand'; sitBlend = 0; lieBlend = 0;
       }
       walkTo = null; walkSeat = null; walkLie = false;   // 먼저 와 있던 사람들
+      const transfer = arrivingTransfer; arrivingTransfer = null;
+      if (transfer && !currentSpot) {
+        me.position.set(transfer.x, 0, transfer.z);
+        pose = 'stand'; sitBlend = 0; lieBlend = 0;
+        if (seats[transfer.seat]) startWalk(seats[transfer.seat].getWorldPosition(new THREE.Vector3()), seats[transfer.seat]);
+      }
       lastSent = '';                                     // 내 자리를 바로 한 번 알림
       if (wantNick && wantNick !== myName) sendNick(wantNick);   // 정해 둔 닉네임으로
       updateNick();startWorldWatchers();

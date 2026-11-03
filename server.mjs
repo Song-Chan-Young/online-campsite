@@ -121,7 +121,7 @@ wss.on('connection', (ws, req) => {
   const params = new URL(req.url, 'http://localhost').searchParams;
   ws.isAlive = true;
   if(new URL(req.url,'http://localhost').searchParams.get('watch')==='1')hub.watch(ws,{room:params.get('server')});
-  else hub.join(ws, {room: params.get('server'), visitor: params.get('visitor'), near: params.get('near'), quiet: params.get('quiet') !== '0'});
+  else hub.join(ws, {room: params.get('server'), visitor: params.get('visitor'), near: params.get('near'), quiet: params.get('quiet') !== '0', stand: params.get('stand') === '1'});
   ws.on('pong', () => { ws.isAlive = true; });
   ws.on('message', (data, binary) => {
     const before = hub.metricsRevision;

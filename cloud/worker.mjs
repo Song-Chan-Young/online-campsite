@@ -63,7 +63,7 @@ export class CampRoom {
       socket.serializeAttachment({watch:true,room:client.room});
       return new Response(null,{status:101,webSocket:browser});
     }
-    this.hub.join(client,{room:params.get('server'),visitor:params.get('visitor'),near:params.get('near'),quiet:params.get('quiet')!=='0'});
+    this.hub.join(client,{room:params.get('server'),visitor:params.get('visitor'),near:params.get('near'),quiet:params.get('quiet')!=='0',stand:params.get('stand')==='1'});
     this.sessions.set(socket,client);
     socket.serializeAttachment(this.hub.snapshot(client));
     return new Response(null,{status:101,webSocket:browser});
