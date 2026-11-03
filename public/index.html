@@ -214,6 +214,21 @@
   .volume-control input {min-width:0;flex:1;accent-color:var(--accent);min-height:24px;}
   #camp-connection {font-size:11px;color:var(--text-dim);padding:2px 4px;}
   .social-dialog {position:fixed;margin:auto;width:min(440px,calc(100vw - 48px));max-height:calc(100dvh - 48px);overflow:auto;border:1px solid var(--line);border-radius:24px;padding:24px;color:var(--text);box-sizing:border-box;text-align:center;}
+  .notes-dialog {position:fixed;margin:auto;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:20px;background:#1f2421;color:#ececec;box-sizing:border-box;overflow:hidden;display:none;flex-direction:column;}
+  .notes-dialog[open] {display:flex;}
+  .notes-dialog::backdrop {background:rgba(6,12,8,.65);backdrop-filter:blur(4px);}
+  .notes-dialog header {display:flex;align-items:center;justify-content:space-between;padding:22px 24px 14px;border-bottom:2px solid #3b7bf6;}
+  .notes-dialog header h2 {margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em;}
+  .notes-dialog header button {width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#ddd;font-size:22px;line-height:1;cursor:pointer;}
+  #notes-body {overflow:auto;padding:4px 24px 24px;-webkit-overflow-scrolling:touch;}
+  .un-section {padding-top:22px;}
+  .un-date {margin:0 0 4px;font-size:13px;color:#9aa19c;}
+  .un-section h3 {margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.18);font-size:18px;font-weight:700;}
+  .un-no {color:#5b9bff;}
+  .un-item {margin:0 0 12px;padding-left:12px;border-left:3px solid #3b7bf6;}
+  .un-item h4 {margin:0 0 3px;font-size:15px;font-weight:700;color:#fff;}
+  .un-item p {margin:0;font-size:14.5px;line-height:1.65;color:#c9cdca;}
+  @media (max-width:520px){.notes-dialog header{padding:18px 18px 12px;}#notes-body{padding:2px 18px 20px;}.notes-dialog header h2{font-size:20px;}}
   .social-dialog::backdrop {background:rgba(6,12,8,.65);backdrop-filter:blur(4px);}
   .social-dialog h2 {margin:0 0 10px;}
   .social-dialog p {color:var(--text-dim);font-size:14px;line-height:1.6;}
@@ -352,6 +367,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h3l1.5-2.5h7L17 8.5h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
     </button>
     <button id="mute" class="icon-btn pill" aria-label="소리 끄기" title="소리 끄기"></button>
+    <button id="notes-btn" class="icon-btn pill" type="button" aria-label="업데이트 내역" title="업데이트 내역" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></svg>
+    </button>
   </div>
 </div>
 
@@ -391,6 +409,10 @@
   <input id="invite-url" readonly aria-label="친구 초대 주소">
   <button id="invite-share" type="button">링크 공유</button>
   <button type="button" class="secondary" data-close-dialog>닫기</button>
+</dialog>
+<dialog id="notes-dialog" class="notes-dialog" aria-labelledby="notes-title">
+  <header><h2 id="notes-title">업데이트 내역</h2><button id="notes-close" type="button" aria-label="닫기">×</button></header>
+  <div id="notes-body"></div>
 </dialog>
 <dialog id="photo-dialog" class="social-dialog pill" aria-labelledby="photo-title">
   <h2 id="photo-title">오늘 밤의 캠핑 엽서</h2>
@@ -490,6 +512,9 @@
 
 <script type="module">
 import * as THREE from 'three';
+import {renderUpdateNotes} from './update-notes.mjs';
+import {snorkelDestination} from './snorkel-navigation.mjs';
+import {createMarineLife} from './camp-marine.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCampfireFlames, createEmberTexture, createBurningWood } from './camp-fire.mjs';
 import { ForestSound } from './forest-sound.mjs';
@@ -879,6 +904,12 @@ let seaTex, foamMat, sandMat, seaMat, pierSnow;
   foamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false });
   quad(WATER_A, WATER_B, BEACH_W - 0.15, BEACH_W + 0.35, foamMat, 0.024);                    // 물가 거품
 }
+
+// Cut the land at the shoreline so it cannot occlude the underwater reef.
+renderer.localClippingEnabled=true;
+const shoreClip=new THREE.Plane(WATER_N.clone().negate(),WATER_N.dot(WATER_A)+BEACH_W);
+for(const surface of [ground,mapGround]){surface.material.clippingPlanes=[shoreClip];surface.material.needsUpdate=true;}
+const marineLife=createMarineLife(THREE,scene,WATER_A,WATER_DIR,WATER_N,SHORE_LEN,BEACH_W);
 
 // 숲 — 지도 밖(물·도로 쪽 빼고) + 지도 안 잔디 자리 몇 그루
 let treeLeaves;
@@ -1755,6 +1786,11 @@ renderer.domElement.addEventListener('pointerup', e => {
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
+  if(seasonKey==='summer'&&swimK>0.5&&!slideRide){
+    const destination=snorkelDestination(me.position,raycaster.ray.direction,WATER_A,WATER_DIR,WATER_N,SHORE_LEN,BEACH_W,SWIM_W);
+    if(destination)startWalk(new THREE.Vector3(destination.x,0,destination.z));
+    return;
+  }
   // 캠프에 놓은 장비(해먹·망원경·아이스박스·랜턴) → 각자 동작
   const gearHit = raycaster.intersectObjects(campInteract.filter(i => i.obj.visible).map(i => i.obj), true)[0];
   if (gearHit) {
@@ -2918,6 +2954,12 @@ for(const phrase of QUICK_PHRASES) {
 
 // 캠핑 엽서 — 사용자 동작으로만 저장하거나 공유함.
 let photoBlob = null, photoURL = '';
+// 업데이트 내역 — 오른쪽 위 (i)
+const notesDialog=document.getElementById('notes-dialog');
+document.getElementById('notes-body').innerHTML=renderUpdateNotes();
+document.getElementById('notes-btn').addEventListener('click',()=>notesDialog.showModal());
+document.getElementById('notes-close').addEventListener('click',()=>notesDialog.close());
+notesDialog.addEventListener('click',e=>{if(e.target===notesDialog)notesDialog.close();});
 const photoDialog = document.getElementById('photo-dialog');
 function savePhoto() {
   if (!photoURL) return;
@@ -4053,6 +4095,22 @@ for (let i = 0; i < 4; i++) {
   stripe.rotation.y = -a; swimTube.add(stripe);
 }
 swimTube.position.y = 0.72; swimTube.visible = false; me.add(swimTube);
+// Summer snorkeling equipment follows the avatar and is removed on shore.
+const snorkelGear = new THREE.Group();
+const snorkelYellow = new THREE.MeshStandardMaterial({color:0xffd43b,roughness:0.35});
+const snorkelGlass = new THREE.MeshStandardMaterial({color:0x63dcff,transparent:true,opacity:0.65,roughness:0.1});
+const maskFrame = new THREE.Mesh(new THREE.BoxGeometry(0.49,0.21,0.09),snorkelYellow);
+maskFrame.position.set(0,1.4,0.29);snorkelGear.add(maskFrame);
+const maskLens = new THREE.Mesh(new THREE.BoxGeometry(0.40,0.14,0.025),snorkelGlass);
+maskLens.position.set(0,1.4,0.345);snorkelGear.add(maskLens);
+const snorkelPath = new THREE.CatmullRomCurve3([new THREE.Vector3(0.08,1.27,0.34),new THREE.Vector3(0.34,1.3,0.3),new THREE.Vector3(0.37,1.65,0.27),new THREE.Vector3(0.37,1.85,0.08)]);
+snorkelGear.add(new THREE.Mesh(new THREE.TubeGeometry(snorkelPath,20,0.035,8,false),snorkelYellow));
+snorkelGear.visible=false;me.add(snorkelGear);
+const snorkelFins=legs.map(l=>{
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(0.23,0.045,0.48),snorkelYellow);
+  fin.position.set(0,-0.35,0.21);fin.visible=false;l.knee.add(fin);return fin;
+});
+let wasSnorkeling=false;
 const slideSplash = new THREE.Group(), splashDrops = [];
 const splashMaterial = new THREE.MeshStandardMaterial({ color: 0xc9f4ff, emissive: 0x4aaacc, emissiveIntensity: 0.35, transparent: true, opacity: 0.9, roughness: 0.16 });
 for (let i = 0; i < 12; i++) {
@@ -4100,7 +4158,7 @@ function updateSlideRide(dt, t) {   // updateWalk 다음에 불러 위치·자�
     const flat = dir.clone().setY(0).normalize();
     slideCamWant.copy(p).addScaledVector(flat, -2.8).add(new THREE.Vector3(0, 2.7, 0));   // 위에서 내려다봐 미끄럼틀 벽에 안 걸림
     slideLook.copy(p).addScaledVector(flat, 3).setY(p.y - 0.4);
-  } else if (e < rideEnd + 0.72) {   // 물에 잠겼다가 튀어 오르는 풍덩 연출
+  } else if (e < rideEnd + 2.4) {   // 풍덩 → 완전히 잠수 → 수면으로 올라옴
     const splashT = e - rideEnd, p = waterSlide.landing;
     if (!slideRide.splashed) {
       slideRide.splashed = true; slideSplash.position.set(p.x, 0.18, p.z); slideSplash.visible = true;
@@ -4112,8 +4170,13 @@ function updateSlideRide(dt, t) {   // updateWalk 다음에 불러 위치·자�
       toast('풍덩!'); if (sound.ready) sound.whoosh();
     }
     pose = 'stand'; sitBlend = 0;
-    const dip = Math.sin(Math.min(1, splashT / 0.72) * Math.PI);
-    me.position.set(p.x, -0.72 * dip, p.z); me.rotation.x = dip * 0.3;
+    const dive = splashT < 0.55 ? Math.sin(splashT / 0.55 * Math.PI / 2)
+      : splashT < 1.35 ? 1 : Math.cos(Math.min(1,(splashT-1.35)/1.05)*Math.PI/2);
+    swimTube.visible=false;
+    snorkelGear.visible=true;snorkelFins.forEach(fin=>fin.visible=true);
+    me.position.set(p.x, -0.12 - 1.9 * dive, p.z);
+    me.rotation.x = Math.PI * 0.43;
+    legs.forEach((leg,i)=>{leg.hip.rotation.x=Math.sin(t*6+i*Math.PI)*0.24;leg.knee.rotation.x=0.12;});
     const f = THREE.MathUtils.clamp(splashT / 0.68, 0, 1);
     splashDrops.forEach(drop => {
       const v = drop.userData;
@@ -4121,13 +4184,13 @@ function updateSlideRide(dt, t) {   // updateWalk 다음에 불러 위치·자�
     });
     splashRing.scale.setScalar(1 + splashT * 2.7); splashRing.material.opacity = Math.max(0, 0.8 * (1 - f));
     splashMaterial.opacity = Math.max(0, 0.9 * (1 - f));
-    slideCamWant.set(p.x + 2.6, 2.5, p.z + 3.5); slideLook.set(p.x, 0.45, p.z);
-  } else {   // 풍덩 뒤에는 튜브를 낀 채 바다에서 수영
+    slideCamWant.set(p.x + 2.6, 2.5 - dive * 3.7, p.z + 3.5); slideLook.set(p.x, -0.1 - dive * 1.8, p.z);
+  } else {   // 잠수 뒤에는 스노클링으로 자연스럽게 전환
     me.position.set(waterSlide.landing.x, 0, waterSlide.landing.z);
     pose = 'stand'; sitBlend = 0;
     slideSplash.visible = false; swimK = 1; camHold = false;
     slideRide = null;
-    toast('튜브를 끼고 수영해요');
+    toast('🤿 물속 탐험을 계속해요');
     return;
   }
   const k = 1 - Math.exp(-dt * 5);
@@ -4344,6 +4407,31 @@ renderer.setAnimationLoop(() => {
   // (원본, 2026-10-30 송찬영 [AI]) me.children[0].scale.y = 1 + Math.sin(t * 1.6) * 0.015;   // 숨쉬기
   torso.scale.y = 1 + Math.sin(t * 1.6) * 0.015;   // 숨쉬기
   flask.rotation.set(-armR.rotation.x, 0, -armR.rotation.z, 'ZYX');   // 팔(XYZ) 회전의 역 → 플라스크 늘 위로
+  const snorkeling = seasonKey === 'summer' && swimK > 0.5 && !slideRide;
+  const slideDiving=!!slideRide?.splashed;
+  if(snorkeling||slideDiving){scene.background=new THREE.Color(0x087f99);scene.fog.color.set(0x087f99);scene.fog.density=0.045;}
+  else if(wasSnorkeling){scene.background=null;}
+  snorkelGear.visible=snorkeling||slideDiving;snorkelFins.forEach(fin=>fin.visible=snorkeling||slideDiving);
+  if(snorkeling){
+    if(!wasSnorkeling){
+      toast('🤿 화면을 누르면 그 방향으로 헤엄쳐요');
+      if(pose!=='walk')faceToward(WATER_N.x,WATER_N.z);
+      camTween=null;camHold=true;controls.maxPolarAngle=Math.PI*0.85;controls.minDistance=0.5;
+    }
+    const swimForward=wasSnorkeling?new THREE.Vector3(Math.sin(me.rotation.y),0,Math.cos(me.rotation.y)):WATER_N.clone();
+    const swimEye=me.position.clone().addScaledVector(swimForward,-0.35).setY(-0.8);
+    camera.position.lerp(swimEye,1-Math.exp(-dt*4));
+    controls.target.lerp(me.position.clone().addScaledVector(swimForward,5).setY(-1.65),1-Math.exp(-dt*4));
+    swimTube.visible=false;pack.visible=false;
+    me.rotation.x=Math.PI*0.43;me.position.y=-0.12+Math.sin(t*2)*0.035;
+    legs.forEach((l,i)=>{l.hip.rotation.x=Math.sin(t*5+i*Math.PI)*0.19;l.knee.rotation.x=0.12;});
+  }
+  if(wasSnorkeling&&!snorkeling&&!slideRide){camHold=false;controls.minDistance=3;controls.maxPolarAngle=Math.PI*0.495;camera.position.y=Math.max(3.2,camera.position.y);}
+  wasSnorkeling=snorkeling;
+  marineLife.update(t,seasonKey==='summer');
+  const seaOpacity=(snorkeling||slideDiving)?0.24:seasonKey==='summer'?0.62:1;
+  if(seaMat.transparent!==(seaOpacity<1)){seaMat.transparent=seaOpacity<1;seaMat.needsUpdate=true;}
+  seaMat.opacity=seaOpacity;seaMat.depthWrite=seaOpacity===1;
   // 수영 — 팔을 번갈아 크게 돌림(자유형), 멈춰 있으면 살랑. 물결 고리
   if (swimK > 0.5) {
     const moving = pose === 'walk';
