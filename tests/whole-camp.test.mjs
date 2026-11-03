@@ -31,6 +31,6 @@ test('whole camp presence combines all rooms without exposing visitors',async()=
     const room=name.slice(-1);return Response.json({total:Number(room),rooms:{1:0,2:0,3:0,[room]:Number(room)}});
   }})}};
   const response=await worker.fetch(new Request('https://camp.example/presence'),env);
-  assert.equal(response.headers.get('Cache-Control'),'no-store');
+  assert.equal(response.headers.get('Cache-Control'),'public, max-age=30');
   assert.deepEqual(await response.json(),{total:6,rooms:{1:1,2:2,3:3}});
 });

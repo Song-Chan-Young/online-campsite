@@ -3186,11 +3186,11 @@ async function refreshCampPresence() {
     serverCount.textContent = `전체 ${data.total}명 접속 중`;
     presenceCheckedAt = Date.now();
   } catch {
-    if (Date.now() - presenceCheckedAt > 20000) serverCount.textContent = '전체 인원 확인 중…';
+    if (Date.now() - presenceCheckedAt > 60000) serverCount.textContent = '인원 조회 일시 중단';
   } finally {presenceLoading = false;}
 }
 refreshCampPresence();
-setInterval(() => {if (!document.hidden) refreshCampPresence();}, 5000);
+setInterval(() => {if (!document.hidden) refreshCampPresence();}, 30000);
 document.addEventListener('visibilitychange', () => {if (!document.hidden) refreshCampPresence();});
 serverBtn.addEventListener('click', () => {
   nickInput.value = shownName() === '나' ? '' : shownName();

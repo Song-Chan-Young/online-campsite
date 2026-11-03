@@ -55,3 +55,10 @@ test('watch handshake waits for an updated room without joining a visitor on old
  const response=await worker.fetch(new Request('https://camp.example/watch?server=2',{headers:{Upgrade:'websocket'}}),env);
  assert.equal(response.status,503);assert.deepEqual(calls,['/capabilities']);
 });
+
+test('presence quota failure is a retryable unavailable response rather than a crash',async()=>{
+ const env={CAMPS:{getByName:()=>{throw new Error('Exceeded allowed volume of requests');}}};
+ const response=await worker.fetch(new Request('https://camp.example/presence'),env);
+ assert.equal(response.status,503);assert.equal(response.headers.get('Retry-After'),'60');
+ assert.equal((await response.json()).error,'presence_unavailable');
+});

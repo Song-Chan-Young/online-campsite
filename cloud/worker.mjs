@@ -3,16 +3,23 @@ import {receiveFeedback} from '../lib/feedback.mjs';
 import {CampHub} from '../lib/camp-hub.mjs';
 
 export default {
-  async fetch(request,env) {
+  async fetch(request,env,ctx) {
     const url=new URL(request.url);
     if(url.pathname.startsWith('/push/'))return env.CAMPS.getByName('customer-feedback').fetch(request);
     if(url.pathname==='/feedback')return env.CAMPS.getByName('customer-feedback').fetch(request);
     if(url.pathname==='/health') return Response.json({ok:true});
     if(url.pathname==='/presence') {
+      const cache=globalThis.caches?.default,cacheKey=new Request(new URL('/presence',url));
+      const cached=await cache?.match(cacheKey);if(cached)return cached;
+      try{
       const results=await Promise.all(['1','2','3'].map(room=>env.CAMPS.getByName(`camp-${room}`).fetch(new Request(new URL('/presence',url))).then(r=>r.json())));
       const rooms={1:0,2:0,3:0};
       for(const result of results)for(const room of ['1','2','3'])rooms[room]+=result.rooms?.[room]||0;
-      return Response.json({total:Object.values(rooms).reduce((sum,n)=>sum+n,0),rooms},{headers:{'Cache-Control':'no-store'}});
+      const response=Response.json({total:Object.values(rooms).reduce((sum,n)=>sum+n,0),rooms},{headers:{'Cache-Control':'public, max-age=30'}});
+      if(cache){const write=cache.put(cacheKey,response.clone());if(ctx)ctx.waitUntil(write);else await write;}
+      return response;
+      }catch{return Response.json({error:'presence_unavailable'},{status:503,headers:{'Retry-After':'60','Cache-Control':'no-store'}});}
+
     }
     if(url.pathname==='/stats') {
       const results=await Promise.all(['1','2','3'].map(room=>env.CAMPS.getByName(`camp-${room}`).fetch(new Request(new URL('/stats',url))).then(r=>r.json())));
