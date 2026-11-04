@@ -529,6 +529,7 @@
 
 <script type="module">
 import * as THREE from 'three';
+import {disconnectForTransfer} from './camp-disconnect.mjs';
 import {renderUpdateNotes} from './update-notes.mjs';
 import {snorkelDestination} from './snorkel-navigation.mjs';
 import {createMarineLife} from './camp-marine.mjs';
@@ -1696,12 +1697,17 @@ me.rotation.order = 'YXZ';   // 방향(Y) 먼저, 그다음 눕기(X)
 faceToward(-me.position.x, -me.position.z);
 // 다른 구역 안에 멈춰 서면 그 구역 서버로 옮겨 감 — 거기서 앉기·눕기·요리를 그대로 씀
 let areaMoving = false;
-function moveToArea(room, seat = null) {
+async function moveToArea(room, seat = null) {
   if (areaMoving || room === SERVER) return;
   areaMoving = true;
   toast(`${CAMP_AREAS[room].name}(으)로 옮겨 가요`);
   try { localStorage.setItem('camp-server', String(room)); } catch {}
-  location.href = transferAddress(location.href, SERVER, room, {x: me.position.x, z: me.position.z, seat});
+  const destination=transferAddress(location.href, SERVER, room, {x: me.position.x, z: me.position.z, seat});
+  const previous=chatWs;
+  stopWorldWatchers();
+  if(previous){previous.onclose=null;previous.onmessage=null;}
+  await disconnectForTransfer(previous);
+  location.href=destination;
 }
 function goLie() { if (pose !== 'lie') startWalk(MAT_FOOT, null, true); }
 function goSeat() { if (pose === 'lie' || walkLie) startWalk(seats[0].getWorldPosition(new THREE.Vector3()), seats[0]); }
